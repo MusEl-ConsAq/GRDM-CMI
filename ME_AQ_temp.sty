@@ -1,0 +1,107 @@
+% ME_AQ_temp.sty
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{ME_AQ_temp}[2024/06/21 Custom style for thesis]
+
+\RequirePackage[italian]{babel}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage{geometry}
+\RequirePackage{setspace}
+\RequirePackage{titlesec}
+\RequirePackage{fontspec}
+\RequirePackage{fancyhdr}
+\RequirePackage{hyperref}
+\RequirePackage{titling}
+\RequirePackage{amsmath}
+\RequirePackage{amsfonts}
+\RequirePackage{amssymb}
+\RequirePackage{graphicx}
+\RequirePackage{caption}
+\RequirePackage{svg}
+\RequirePackage{float}
+\RequirePackage{wrapfig}
+% links siano visibili e cliccabili nel documento PDF generato
+\hypersetup{
+    colorlinks=true, % colora i link invece di riquadrarli
+    linkcolor=blue,  % colore dei link interni es. indice
+    urlcolor=blue,   % colore dei link esterni es. URL
+    citecolor=blue,  % colore delle citazioni nel testo
+}
+
+% Imposta margini
+\geometry{a4paper, top=2.5cm, bottom=2.5cm, left=2cm, right=2cm}
+
+% Imposta carattere Arial
+\setmainfont{Arial}
+
+% Comando per il pre-titolo (informazioni accademiche)
+\newcommand{\pretitleinfo}{Corsi Accademici di Musica Elettronica / DCPL34 \\ Conservatorio A. Casella, L'Aquila}
+
+
+% Imposta intestazione e piè di pagina per la prima pagina
+\fancypagestyle{primaPagina}{
+  \fancyhf{}
+  \fancyhead[C]{\fontsize{12}{15}\pretitleinfo \\ \mycustomtitle} % Intestazione con pre-titolo e titolo della tesina
+  \fancyhead[R]{\ifdefined\@author\@author\fi}   % Autore (nome e cognome)
+  \fancyfoot[C]{\thepage} % Piè di pagina con il numero della pagina
+  \renewcommand{\headrulewidth}{0pt} % Rimuove la linea orizzontale
+}
+
+% Rimuovi intestazioni dalle altre pagine
+\fancypagestyle{altrePagine}{
+\pagestyle{plain}
+}
+
+% Imposta il comportamento di default
+\pagestyle{altrePagine}
+
+% Aggiungi al documento principale, nella prima pagina, il comando per usare lo stile della prima pagina
+\AtBeginDocument{\thispagestyle{primaPagina}}
+% Impostazione della profondità di numerazione delle sezioni
+\setcounter{secnumdepth}{3}
+
+% Configura titoli di sezione
+\titleformat{\section}
+  {\normalfont\fontsize{12}{15}\bfseries\uppercase}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\fontsize{12}{15}\itshape}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\fontsize{12}{12}\itshape} % Formato del testo
+  {\thesubsubsection} % Etichetta
+  {1em} % Spazio tra etichetta e titolo
+  {} % Formato prima del titolo
+
+% Configura spaziatura
+\setstretch{1}
+
+% Configura spaziatura tra paragrafi
+\setlength{\parskip}{\baselineskip}
+\setlength{\parindent}{0pt}
+
+% Configura note a piè di pagina
+\renewcommand{\footnotesize}{\fontsize{10}{12}\selectfont}
+
+% Aggiunta dei comandi personalizzati per le convenzioni di redazione
+\newcommand{\titoloart}[2]{\textit{#1} (#2)}
+\newcommand{\linguaest}[1]{\textit{#1}}
+\newcommand{\titoloarticulo}[1]{``#1''}
+% Comando per parole tecniche
+
+\newcommand{\persona}[3]{#1 (#2--#3)}
+\newcommand{\personaViva}[2]{#1 (#2)}
+% Definizione del comando per aggiungere una spiegazione per una parola tecnica
+\newcommand{\parolatecnica}[2]{%
+    \expandafter\newcommand\csname spiegazione#1\endcsname{#2}%
+}
+
+% Comando per citazioni brevi
+\newcommand{\citazionebreve}[2]{``#1'' (#2)}
+
+% Comando per citazioni estese
+\newcommand{\citazioneestesa}[3]{%
+    \begin{quote}\small\noindent%
+    #1\\%
+    \mbox{}\hfill(#2, p.#3)%
+    \end{quote}%
+}
+
+\endinput

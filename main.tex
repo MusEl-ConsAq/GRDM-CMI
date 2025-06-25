@@ -1,0 +1,51 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{ME_AQ_temp}
+\usepackage{tabularx}
+
+%% -------------------------------------- %%
+%  - impostare il titolo della tesina in entrambe le righe 
+% 
+%% -------------------------------------- %%
+
+\newcommand{\mycustomtitle}{Titolo della Tesina}
+% Definisci un titolo personalizzato
+\newcommand{\setmytitle}[1]{\renewcommand{\mycustomtitle}{#1}}
+
+% Definizione del titolo e dell'autore
+\title{Corsi Accademici di Musica Elettronica DCPL34 Conservatorio A. Casella, L'Aquila \\ \fontsize{14}{17}\bfseries\uppercase{Titolo della Tesina}}
+\author{Nome Cognome \\ esame di \bfseries{Storia della Musica Elettroacustica} e \\ \bfseries{Analisi della Musica Elettroacustica}}
+\date{xx/xx/xxxx}
+
+% Sovrascrivi le impostazioni di hyperref per l'indice
+\hypersetup{
+    linkcolor=black, % Imposta il colore dei link dell'indice a nero
+}
+
+\begin{document}
+
+% Pagina 1: Titolo e riassunto
+\maketitle
+\thispagestyle{empty}
+
+\begin{center}
+    \vspace{1cm}
+    \textbf{\fontsize{12}{15}\selectfont{Sommario}}
+\end{center}
+
+Testo del sommario...
+
+\newpage
+% Genera l'indice
+\tableofcontents  
+
+% Pagina 2: Introduzione e resto del testo
+\newpage
+
+\input{sections/all.tex}
+
+% Aggiungi la bibliografia
+\newpage % ---- Inizia una nuova pagina prima della bibliografia
+\bibliographystyle{plain}
+\bibliography{bibliography}
+
+\end{document}
