@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 # Directory di input contenente i file Markdown (.md)
 # Assumiamo che lo script sia eseguito dalla directory GRDM-TETDRA-I
 # e che i file .md siano direttamente in essa (o in una sottodirectory specificata)
-INPUT_DIR_MD = Path("sections_md") # Directory corrente, dove si trovano i file .md
+INPUT_DIR_MD = Path("MarkDownSections") # Directory corrente, dove si trovano i file .md
 # Se i tuoi file .md fossero in una sottodirectory, ad esempio "markdown_sources":
 # INPUT_DIR_MD = Path("markdown_sources")
 
@@ -26,7 +26,7 @@ MD_FILES_ORDER = [
 ]
 
 # Directory di output per i file .tex generati
-OUTPUT_DIR_TEX = Path("sexons") # Creeremo una nuova cartella per non sovrascrivere la tua 'sections'
+OUTPUT_DIR_TEX = Path("sections") # Creeremo una nuova cartella per non sovrascrivere la tua 'sections'
 
 # File principale LaTeX e file di stile (per riferimento, non li modifichiamo in questa fase)
 MAIN_TEX_FILE = Path("main.tex")
