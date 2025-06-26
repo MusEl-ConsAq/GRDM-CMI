@@ -367,6 +367,36 @@ def remove_transcription_citations(text: str) -> str:
         
     print("    - Rimosse citazioni 'Trascrizione...' e loro definizioni dal testo LaTeX")
     return text
+def convert_code_blocks(text: str) -> str:
+    """Converte blocchi di codice Markdown in ambienti listings di LaTeX."""
+    # Regex per trovare un blocco di codice: ```[linguaggio]\n...codice...\n```
+    # Il (.*?) è "non-greedy" per gestire più blocchi di codice nello stesso file.
+    # re.DOTALL fa sì che il "." includa anche i caratteri di a capo.
+    pattern = re.compile(r"```(\w*)\n(.*?)\n```", re.DOTALL)
+
+    def replacer_logic(match):
+        language = match.group(1).strip()
+        code = match.group(2)
+        
+        # Pulisce il codice da eventuali caratteri che potrebbero rompere listings
+        # (questo è un punto delicato, per ora lo manteniamo semplice)
+        
+        # Opzione per specificare il linguaggio in LaTeX
+        if language:
+            # Per esempio, da ```python a \begin{lstlisting}[language=Python]
+            # Nota: 'listings' usa nomi dei linguaggi con la maiuscola (Python, C++, Yaml, etc.)
+            language_option = f"[language={language.capitalize()}]"
+        else:
+            language_option = ""
+            
+        # Ritorna l'ambiente LaTeX
+        return f"\\begin{{lstlisting}}{language_option}\n{code}\n\\end{{lstlisting}}"
+
+    processed_text = pattern.sub(replacer_logic, text)
+    if processed_text != text:
+        logging.info("    - Convertiti blocchi di codice in ambiente 'listings'")
+    
+    return processed_text
 
 def convert_headings(text: str) -> str:
     # Versione modificata per accettare titoli standard (senza grassetto obbligatorio)
@@ -493,16 +523,58 @@ def apply_persona_command(text: str) -> str:
 
     logging.info("    - Tentativo di applicazione comando \\persona")
     return processed_text
+def convert_inline_code(text: str) -> str:
+    """Converte il codice inline Markdown (`codice`) in \texttt{codice} LaTeX."""
+    # Regex per trovare `testo` che non sia parte di un blocco di codice ```
+    # Usiamo un negative lookbehind/ahead per assicurarci di non matchare `` o ```
+    pattern = re.compile(r"(?<!`)`([^`\n]+?)`(?!`)") 
+
+    def replacer_logic(match):
+        code = match.group(1)
+        # Alcuni caratteri speciali potrebbero dare problemi in \texttt.
+        # I più comuni sono _, {, }, \, ^, &, %, #, $
+        # Li "escapiamo" con un backslash.
+        code = code.replace('\\', r'\textbackslash{}')
+        code = code.replace('{', r'\{')
+        code = code.replace('}', r'\}')
+        code = code.replace('_', r'\_')
+        code = code.replace('^', r'\^{}')
+        code = code.replace('&', r'\&')
+        code = code.replace('%', r'\%')
+        code = code.replace('#', r'\#')
+        code = code.replace('$', r'\$')
+        return f"\\texttt{{{code}}}"
+
+    processed_text = pattern.sub(replacer_logic, text)
+    if processed_text != text:
+        logging.info("    - Convertito codice inline in \\texttt{}")
+        
+    return processed_text
+
+# Funzione per il corsivo personalizzato
+def convert_custom_italics(text: str) -> str:
+    """Converte ''testo'' o ‘‘testo’’ in corsivo LaTeX \textit{...}."""
+    # Cerca ''...'' (dritti) o ‘‘...’’ (curvi)
+    pattern = re.compile(r"(?:''|‘‘)(.*?)(?:''|’’)")
+    processed_text = pattern.sub(r"\\textit{\1}", text)
+    
+    if processed_text != text:
+        logging.info("    - Convertito ''testo'' o ‘‘testo’’ in corsivo (\\textit)")
+    
+    return processed_text
 
 def process_markdown_content(md_content: str, md_filename_for_this_content: str, section_index: int, is_first_section: bool) -> str:
     logging.info(f"Processando contenuto per la sezione {section_index} ({md_filename_for_this_content})...")
     
     latex_content = md_content
-    
+    latex_content = convert_code_blocks(latex_content)
+    latex_content = convert_inline_code(latex_content)
+
     # Fase 2 e precedenti:
     latex_content = remove_transcription_citations(latex_content) # Rimuove anche i richiami, non solo le definizioni
     latex_content = convert_headings(latex_content)
     latex_content = convert_numbered_lists(latex_content)
+    latex_content = convert_custom_italics(latex_content)
     latex_content = convert_emphasis_quotes(latex_content)
     
     # Fase 3:

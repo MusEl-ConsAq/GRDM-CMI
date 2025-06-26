@@ -1,7 +1,46 @@
 \documentclass[a4paper,12pt]{article}
 \usepackage{ME_AQ_temp}
 \usepackage{tabularx}
+\usepackage{listings}
+\usepackage{xcolor} % Necessario per usare i colori
 
+% Definisci i colori che userai per il codice
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.98,0.98,0.98} % Un grigio molto chiaro per lo sfondo
+
+% Definisci uno stile personalizzato per tutti i tuoi listati
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   % Sfondo del blocco di codice
+    commentstyle=\color{codegreen},       % Colore per i commenti
+    keywordstyle=\color{magenta},         % Colore per le parole chiave del linguaggio
+    numberstyle=\tiny\color{codegray},    % Stile per i numeri di riga
+    stringstyle=\color{codepurple},       % Colore per le stringhe
+    basicstyle=\ttfamily\footnotesize,    % Font di base (monospaziato, piccolo)
+    
+    % --- OPZIONI FONDAMENTALI PER I MARGINI ---
+    breakatwhitespace=false,              % Permette di spezzare le righe ovunque, non solo sugli spazi
+    breaklines=true,                      % Abilita l'andare a capo automatico
+    
+    % --- Altre opzioni utili per la leggibilità ---
+    captionpos=b,                         % Posizione della didascalia (b=bottom, t=top)
+    keepspaces=true,                      % Mantiene gli spazi nel codice, fondamentale per l'indentazione
+    numbers=left,                         % Posizione dei numeri di riga
+    numbersep=5pt,                        % Distanza tra numeri di riga e codice
+    showspaces=false,                     % Non mostrare gli spazi con un simbolo speciale
+    showstringspaces=false,               % Non mostrare gli spazi nelle stringhe con un simbolo speciale
+    showtabs=false,                       % Non mostrare i tab con un simbolo speciale
+    tabsize=2,                            % Dimensione di un carattere di tabulazione
+    frame=single,                         % Aggiunge un bordo attorno al blocco di codice
+    framerule=0.5pt,                      % Spessore del bordo
+    rulecolor=\color{black},              % Colore del bordo
+    xleftmargin=1em,                      % Margine sinistro del blocco
+    xrightmargin=1em                      % Margine destro del blocco
+}
+
+% Applica questo stile a tutti gli ambienti lstlisting del documento
+\lstset{style=mystyle}
 %% -------------------------------------- %%
 %  - impostare il titolo della tesina in entrambe le righe 
 % 
