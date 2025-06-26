@@ -18,10 +18,13 @@ INPUT_DIR_MD = Path("MarkDownSections") # Directory corrente, dove si trovano i 
 # e per l'inclusione in sections/all.tex
 MD_FILES_ORDER = [
     "introduzione.md",
-    "sezioneI.md",
-    "sezioneII.md",
-    "sezioneIII.md",
-    "sezioneIV.md"
+    "capitolo1.md",
+    "capitolo2.md",
+    "capitolo3.md",
+    "capitolo4.md",
+    "capitolo5.md",
+    "capitolo6.md",
+    "capitolo7.md"
     # Aggiungi qui "conclusione.md" se lo avrai
 ]
 
@@ -366,10 +369,14 @@ def remove_transcription_citations(text: str) -> str:
     return text
 
 def convert_headings(text: str) -> str:
-    text = re.sub(r"^\s*###\s*\*\*[\d\.]*\s*(.*?)\*\*\s*$", r"\\subsection{\1}", text, flags=re.MULTILINE)
-    text = re.sub(r"^\s*##\s*\*\*[\d\.]*\s*(.*?)\*\*\s*$", r"\\section{\1}", text, flags=re.MULTILINE)
-    text = re.sub(r"^\s*#\s*\*\*(.*?)\*\*\s*$", r"\\section{\1}", text, flags=re.MULTILINE)
-    logging.info("    - Convertiti i titoli")
+    # Versione modificata per accettare titoli standard (senza grassetto obbligatorio)
+    # Cerca: ### Titolo
+    text = re.sub(r"^\s*###\s+(.*?)(\s+\{.*\})?\s*$", r"\\subsection{\1}", text, flags=re.MULTILINE)
+    # Cerca: ## Titolo
+    text = re.sub(r"^\s*##\s+(.*?)(\s+\{.*\})?\s*$", r"\\section{\1}", text, flags=re.MULTILINE)
+    # Cerca: # Titolo
+    text = re.sub(r"^\s*#\s+(.*?)(\s+\{.*\})?\s*$", r"\\section{\1}", text, flags=re.MULTILINE)
+    logging.info("    - Convertiti i titoli (usando regole standard)")
     return text
 
 def convert_emphasis_quotes(text: str) -> str:

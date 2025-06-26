@@ -1,0 +1,204 @@
+# CAPITOLO 2: CONFIGURAZIONE E PARAMETRIZZAZIONE
+
+Il sistema Gamma implementa una separazione netta tra logica di sintesi e configurazione dei parametri, permettendo al compositore di modificare profondamente il comportamento del sistema senza toccare il codice Csound. Questo approccio modulare facilita la sperimentazione e l'estensione del sistema.
+
+## 2.1 Il File tables.yaml
+
+Il file `tables.yaml` rappresenta il cuore configurabile del sistema, definendo tutte le tabelle di forma d'onda e inviluppo utilizzate nella sintesi. La sua struttura gerarchica separa chiaramente gli inviluppi per eventi singoli da quelli per sezioni intere.
+
+### Struttura delle Definizioni di Tabella
+
+Ogni tabella è definita attraverso quattro parametri fondamentali:
+
+```yaml
+nome_simbolico:
+  number: [numero della f-table in Csound]
+  size: [dimensione in campioni]
+  gen_routine: [numero della GEN routine]
+  parameters: [lista dei parametri per la GEN]
+```
+
+Vediamo un esempio concreto:
+
+```yaml
+event_envelopes:
+  lineare:
+    number: 2
+    size: 4096
+    gen_routine: 6
+    parameters: [0.001, 2048, 0.5, 2048, 1]  # Linea retta da 0 a 1
+```
+
+Questa definizione genera in Csound:
+```csound
+f 2 0 4096 6 0.001 2048 0.5 2048 1
+```
+
+La scelta della GEN routine 6 (segmenti cubici) invece della più comune GEN 7 (segmenti lineari) permette transizioni più morbide tra i punti di controllo, essenziale per inviluppi naturali.
+
+### Inviluppi Evento vs Inviluppi Sezione
+
+Il sistema distingue due categorie di inviluppi con funzioni distinte:
+
+**Event Envelopes** - Applicati ai singoli eventi sonori:
+
+```yaml
+event_envelopes:
+  impulsivo:
+    number: 5
+    size: 4096
+    gen_routine: 5
+    parameters: [0.001, 512, 1, 3584, 0.0001]
+    
+  lento:
+    number: 6
+    size: 4096
+    gen_routine: 7
+    parameters: [0, 3072, 1, 1024, 0]
+    
+  sostenuto:
+    number: 7
+    size: 4096
+    gen_routine: 7
+    parameters: [0, 512, 1, 3072, 1, 512, 0]
+```
+
+L'inviluppo `impulsivo` utilizza GEN 5 (segmenti esponenziali) per creare un attacco rapidissimo (512 campioni su 4096, circa 1/8 della durata) seguito da un decadimento esponenziale. Il valore finale di 0.0001 invece di 0 evita discontinuità nell'interpolazione esponenziale.
+
+L'inviluppo `lento` con GEN 7 crea un attacco graduale per 3/4 della durata, ideale per tessiture ambient o crescendi graduali.
+
+**Section Envelopes** - Modulano interi gruppi di eventi:
+
+```yaml
+section_envelopes:
+  crescendo_diminuendo:
+    number: 24
+    size: 4096
+    gen_routine: 7
+    parameters: [0, 2048, 1, 2048, 0]
+    
+  impulso:
+    number: 25
+    size: 4096
+    gen_routine: 6
+    parameters: [1, 4096, 0.001]
+```
+
+Gli inviluppi di sezione operano su una scala temporale maggiore. Il numero di tabella parte da 20 per convenzione, distinguendoli chiaramente dagli inviluppi evento nel codice Csound:
+
+```csound
+if i_ifn_section_env > 20 && i_section_duration > 0 then
+    ; Applica inviluppo di sezione
+endif
+```
+
+### GEN Routines e Loro Parametri
+
+Le GEN routines utilizzate nel sistema sono scelte per le loro caratteristiche specifiche:
+
+**GEN 5** - Segmenti esponenziali:
+- Ideale per decadimenti naturali e attacchi percussivi
+- Richiede valori non-zero per evitare singolarità matematiche
+- Parametri: [valore, durata, valore, durata, ...]
+
+**GEN 6** - Segmenti cubici:
+- Transizioni morbide senza discontinuità nelle derivate
+- Perfetta per inviluppi che devono suonare "organici"
+- Stessa sintassi di GEN 5 ma interpolazione diversa
+
+**GEN 7** - Segmenti lineari:
+- Controllo preciso e prevedibile
+- Efficiente computazionalmente
+- Ideale per forme geometriche precise
+
+**GEN 10** - Sintesi additiva:
+```yaml
+plateau_forte:
+  number: 23
+  size: 4096
+  gen_routine: 10
+  parameters: [1]
+```
+Usata qui in modo non convenzionale per creare un valore costante.
+
+## 2.2 Sistema di Macro e Costanti Globali
+
+Il template CSD di Gamma definisce un sistema di macro che parametrizza l'intero spazio sonoro:
+
+```csound
+#define SQRT2 #1.4142135623730951#
+#define MAX_AMP #0.999#
+#define FONDAMENTALE #32#
+#define OTTAVE #10#
+#define INTERVALLI #200#
+#define REGISTRI #50#
+#define M_PI #3.141592653589793#
+```
+
+### Parametri dello Spazio Frequenziale
+
+Le macro `OTTAVE`, `INTERVALLI` e `REGISTRI` definiscono la risoluzione del sistema di intonazione:
+
+- **OTTAVE** (10): Copre l'intero range udibile da 32 Hz a ~32 kHz
+- **INTERVALLI** (200): Numero di divisioni per ottava nel sistema pitagorico
+- **REGISTRI** (50): Suddivisioni fini all'interno di ogni ottava
+
+La relazione tra questi parametri determina la granularità frequenziale:
+```
+Totale frequenze = OTTAVE * INTERVALLI = 2000
+Risoluzione per registro = INTERVALLI / REGISTRI = 4 intervalli
+```
+
+### Tabelle Globali e Allocazione Dinamica
+
+Il sistema utilizza due tabelle globali principali:
+
+```csound
+gi_Index init 1
+gi_eve_attacco ftgen 0, 0, 2^20, -2, 0
+gi_Intonazione ftgen 0, 0, $OTTAVE*$INTERVALLI+1, -2, 0
+```
+
+**gi_eve_attacco**: Una tabella enorme (2^20 = 1.048.576 elementi) che memorizza i tempi di attacco di tutti gli eventi generati. La dimensione generosa permette composizioni estremamente lunghe senza rischio di overflow.
+
+**gi_Intonazione**: Contiene tutte le frequenze del sistema pitagorico. La dimensione è calcolata dinamicamente come `OTTAVE * INTERVALLI + 1`, dove il +1 gestisce casi limite di indicizzazione.
+
+L'allocazione avviene con `ftgen`:
+- Primo parametro (0): Numero di tabella assegnato automaticamente
+- Secondo parametro (0): Creazione a init-time
+- Terzo parametro: Dimensione
+- Quarto parametro (-2): GEN routine per dati arbitrari
+
+### Gestione della Memoria
+
+Il sistema implementa strategie per ottimizzare l'uso della memoria:
+
+1. **Tabelle Temporanee**: Lo strumento Voce crea tabelle estese che vengono deallocate alla fine:
+```csound
+i_TempRitmiTab ftgen 0, 0, i_LenRitmiTab + 10000, -2, 0
+; ... uso della tabella ...
+ftfree i_TempRitmiTab, 0
+```
+
+2. **Condivisione delle Tabelle Ritmiche**: Pattern identici condividono le stesse tabelle attraverso il sistema di mappatura in Python.
+
+3. **Inizializzazione Lazy**: Le tabelle vengono popolate solo quando necessario, come gi_Intonazione che viene riempita dallo strumento Init.
+
+### Integrazione con Python
+
+Il file `tables.yaml` viene letto dal generatore Python che:
+1. Carica le configurazioni all'inizializzazione
+2. Genera automaticamente gli f-statement nel CSD
+3. Mantiene mappe nome→numero per riferimenti simbolici
+
+Questo permette di riferirsi agli inviluppi per nome nel YAML compositivo:
+```yaml
+inviluppo_attacco: { value: 'impulsivo' }
+```
+
+Invece di numeri magici:
+```yaml
+inviluppo_attacco: { value: 5 }  # Meno leggibile e manutenibile
+```
+
+Il sistema di configurazione di Gamma dimostra come una buona architettura software possa rendere un sistema complesso sia potente che accessibile, permettendo estensioni e modifiche senza richiedere modifiche al core del sistema.
