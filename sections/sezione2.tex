@@ -1,13 +1,13 @@
 % --- Contenuto LaTeX autogenerato da capitolo2.md (sezione 3) ---
 
-\section{CAPITOLO 2: CONFIGURAZIONE E PARAMETRIZZAZIONE}
+\section{CONFIGURAZIONE E PARAMETRIZZAZIONE}
 Il sistema Gamma implementa una separazione netta tra logica di sintesi e configurazione dei parametri, permettendo al compositore di modificare profondamente il comportamento del sistema senza toccare il codice Csound. Questo approccio modulare facilita la sperimentazione e l'estensione del sistema.
-\section{2.1 Il File tables.yaml}
+\subsection{Il File tables.yaml}
 Il file \texttt{tables.yaml} rappresenta il cuore configurabile del sistema, definendo tutte le tabelle di forma d'onda e inviluppo utilizzate nella sintesi. La sua struttura gerarchica separa chiaramente gli inviluppi per eventi singoli da quelli per sezioni intere.
-\subsection{Struttura delle Definizioni di Tabella}
+\subsubsection{Struttura delle Definizioni di Tabella}
 Ogni tabella è definita attraverso quattro parametri fondamentali:
 
-\begin{lstlisting}[language=Yaml]
+\begin{lstlisting}[language=Python]
 nome_simbolico:
   number: [numero della f-table in Csound]
   size: [dimensione in campioni]
@@ -17,7 +17,7 @@ nome_simbolico:
 
 Vediamo un esempio concreto:
 
-\begin{lstlisting}[language=Yaml]
+\begin{lstlisting}[language=Python]
 event_envelopes:
   lineare:
     number: 2
@@ -27,17 +27,17 @@ event_envelopes:
 \end{lstlisting}
 
 Questa definizione genera in Csound:
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 f 2 0 4096 6 0.001 2048 0.5 2048 1
 \end{lstlisting}
 
 La scelta della GEN routine 6 (segmenti cubici) invece della più comune GEN 7 (segmenti lineari) permette transizioni più morbide tra i punti di controllo, essenziale per inviluppi naturali.
-\subsection{Inviluppi Evento vs Inviluppi Sezione}
+\subsubsection{Inviluppi Evento vs Inviluppi Sezione}
 Il sistema distingue due categorie di inviluppi con funzioni distinte:
 
-**Event Envelopes** - Applicati ai singoli eventi sonori:
+\texttt{Event Envelopes} Applicati ai singoli eventi sonori:
 
-\begin{lstlisting}[language=Yaml]
+\begin{lstlisting}[language=Python]
 event_envelopes:
   impulsivo:
     number: 5
@@ -62,9 +62,9 @@ L'inviluppo \texttt{impulsivo} utilizza GEN 5 (segmenti esponenziali) per creare
 
 L'inviluppo \texttt{lento} con GEN 7 crea un attacco graduale per 3/4 della durata, ideale per tessiture ambient o crescendi graduali.
 
-**Section Envelopes** - Modulano interi gruppi di eventi:
+\texttt{Section Envelopes} Modulano interi gruppi di eventi:
 
-\begin{lstlisting}[language=Yaml]
+\begin{lstlisting}[language=Python]
 section_envelopes:
   crescendo_diminuendo:
     number: 24
@@ -81,31 +81,37 @@ impulso:
 
 Gli inviluppi di sezione operano su una scala temporale maggiore. Il numero di tabella parte da 20 per convenzione, distinguendoli chiaramente dagli inviluppi evento nel codice Csound:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 if i_ifn_section_env > 20 && i_section_duration > 0 then
     ; Applica inviluppo di sezione
 endif
 \end{lstlisting}
-\subsection{GEN Routines e Loro Parametri}
+\subsubsection{GEN Routines e Loro Parametri}
 Le GEN routines utilizzate nel sistema sono scelte per le loro caratteristiche specifiche:
 
-**GEN 5** - Segmenti esponenziali:
-- Ideale per decadimenti naturali e attacchi percussivi
-- Richiede valori non-zero per evitare singolarità matematiche
-- Parametri: [valore, durata, valore, durata, ...]
+\texttt{GEN 5} Segmenti esponenziali:
+\begin{itemize}
+    \item Ideale per decadimenti naturali e attacchi percussivi
+    \item Richiede valori non-zero per evitare singolarità matematiche
+    \item Parametri: [valore, durata, valore, durata, \ldots]
+\end{itemize}
 
-**GEN 6** - Segmenti cubici:
-- Transizioni morbide senza discontinuità nelle derivate
-- Perfetta per inviluppi che devono suonare ''organici''
-- Stessa sintassi di GEN 5 ma interpolazione diversa
+\texttt{GEN 6} Segmenti cubici:
+\begin{itemize}
+    \item Transizioni morbide senza discontinuità nelle derivate
+    \item Perfetta per inviluppi che devono suonare \textit{organici}
+    \item Stessa sintassi di GEN 5 ma interpolazione diversa
+\end{itemize}
 
-**GEN 7** - Segmenti lineari:
-- Controllo preciso e prevedibile
-- Efficiente computazionalmente
-- Ideale per forme geometriche precise
+\texttt{GEN 7} Segmenti lineari:
+\begin{itemize}
+    \item Controllo preciso e prevedibile
+    \item Efficiente computazionalmente
+    \item Ideale per forme geometriche precise
+\end{itemize}
 
-**GEN 10** - Sintesi additiva:
-\begin{lstlisting}[language=Yaml]
+\texttt{GEN 10} Sintesi additiva:
+\begin{lstlisting}[language=Python]
 plateau_forte:
   number: 23
   size: 4096
@@ -113,10 +119,10 @@ plateau_forte:
   parameters: [1]
 \end{lstlisting}
 Usata qui in modo non convenzionale per creare un valore costante.
-\section{2.2 Sistema di Macro e Costanti Globali}
+\subsection{Sistema di Macro e Costanti Globali}
 Il template CSD di Gamma definisce un sistema di macro che parametrizza l'intero spazio sonoro:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 #define SQRT2 #1.4142135623730951#
 #define MAX_AMP #0.999#
 #define FONDAMENTALE #32#
@@ -125,43 +131,47 @@ Il template CSD di Gamma definisce un sistema di macro che parametrizza l'intero
 #define REGISTRI #50#
 #define M_PI #3.141592653589793#
 \end{lstlisting}
-\subsection{Parametri dello Spazio Frequenziale}
+\subsubsection{Parametri dello Spazio Frequenziale}
 Le macro \texttt{OTTAVE}, \texttt{INTERVALLI} e \texttt{REGISTRI} definiscono la risoluzione del sistema di intonazione:
 
-- **OTTAVE** (10): Copre l'intero range udibile da 32 Hz a ~32 kHz
-- **INTERVALLI** (200): Numero di divisioni per ottava nel sistema pitagorico
-- **REGISTRI** (50): Suddivisioni fini all'interno di ogni ottava
+\begin{itemize}
+    \item \texttt{OTTAVE} (10): Copre l'intero range udibile da 32 Hz a \textasciitilde{}32 kHz
+    \item \texttt{INTERVALLI} (200): Numero di divisioni per ottava nel sistema pitagorico
+    \item \texttt{REGISTRI} (50): Suddivisioni fini all'interno di ogni ottava
+\end{itemize}
 
 La relazione tra questi parametri determina la granularità frequenziale:
 \begin{lstlisting}
 Totale frequenze = OTTAVE * INTERVALLI = 2000
 Risoluzione per registro = INTERVALLI / REGISTRI = 4 intervalli
 \end{lstlisting}
-\subsection{Tabelle Globali e Allocazione Dinamica}
+\subsubsection{Tabelle Globali e Allocazione Dinamica}
 Il sistema utilizza due tabelle globali principali:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 gi_Index init 1
 gi_eve_attacco ftgen 0, 0, 2^20, -2, 0
 gi_Intonazione ftgen 0, 0, $OTTAVE*$INTERVALLI+1, -2, 0
 \end{lstlisting}
 
-**gi_eve_attacco**: Una tabella enorme (2^20 = 1.048.576 elementi) che memorizza i tempi di attacco di tutti gli eventi generati. La dimensione generosa permette composizioni estremamente lunghe senza rischio di overflow.
+\texttt{gi\_eve\_attacco}: Una tabella enorme ($2^{20}$ = 1.048.576 elementi) che memorizza i tempi di attacco di tutti gli eventi generati. La dimensione generosa permette composizioni estremamente lunghe senza rischio di overflow.
 
-**gi_Intonazione**: Contiene tutte le frequenze del sistema pitagorico. La dimensione è calcolata dinamicamente come \texttt{OTTAVE * INTERVALLI + 1}, dove il +1 gestisce casi limite di indicizzazione.
+\texttt{gi\_Intonazione}: Contiene tutte le frequenze del sistema pitagorico. La dimensione è calcolata dinamicamente come \texttt{OTTAVE * INTERVALLI + 1}, dove il +1 gestisce casi limite di indicizzazione.
 
 L'allocazione avviene con \texttt{ftgen}:
-- Primo parametro (0): Numero di tabella assegnato automaticamente
-- Secondo parametro (0): Creazione a init-time
-- Terzo parametro: Dimensione
-- Quarto parametro (-2): GEN routine per dati arbitrari
-\subsection{Gestione della Memoria}
+\begin{itemize}
+    \item Primo parametro (0): Numero di tabella assegnato automaticamente
+    \item Secondo parametro (0): Creazione a init-time
+    \item Terzo parametro: Dimensione
+    \item Quarto parametro (-2): GEN routine per dati arbitrari
+\end{itemize}
+\subsubsection{Gestione della Memoria}
 Il sistema implementa strategie per ottimizzare l'uso della memoria:
 
 \begin{enumerate}
     \item \textbf{Tabelle Temporanee}: Lo strumento Voce crea tabelle estese che vengono deallocate alla fine:
 \end{enumerate}
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 i_TempRitmiTab ftgen 0, 0, i_LenRitmiTab + 10000, -2, 0
 ; ... uso della tabella ...
 ftfree i_TempRitmiTab, 0
@@ -169,26 +179,22 @@ ftfree i_TempRitmiTab, 0
 
 \begin{enumerate}
     \item \textbf{Condivisione delle Tabelle Ritmiche}: Pattern identici condividono le stesse tabelle attraverso il sistema di mappatura in Python.
+    \item \textbf{Inizializzazione Lazy}: Le tabelle vengono popolate solo quando necessario, come \texttt{gi\_Intonazione} che viene riempita dallo strumento Init.
 \end{enumerate}
-
-\begin{enumerate}
-    \item \textbf{Inizializzazione Lazy}: Le tabelle vengono popolate solo quando necessario, come gi_Intonazione che viene riempita dallo strumento Init.
-\end{enumerate}
-\subsection{Integrazione con Python}
+\subsubsection{Integrazione con Python}
 Il file \texttt{tables.yaml} viene letto dal generatore Python che:
 \begin{enumerate}
     \item Carica le configurazioni all'inizializzazione
     \item Genera automaticamente gli f-statement nel CSD
     \item Mantiene mappe nome→numero per riferimenti simbolici
 \end{enumerate}
-
 Questo permette di riferirsi agli inviluppi per nome nel YAML compositivo:
-\begin{lstlisting}[language=Yaml]
+\begin{lstlisting}[language=Python]
 inviluppo_attacco: { value: 'impulsivo' }
 \end{lstlisting}
 
 Invece di numeri magici:
-\begin{lstlisting}[language=Yaml]
+\begin{lstlisting}[language=Python]
 inviluppo_attacco: { value: 5 }  # Meno leggibile e manutenibile
 \end{lstlisting}
 

@@ -1,8 +1,8 @@
-# CAPITOLO 3: ARCHITETTURA DEL COMPOSITORE GENERATIVO
+# ARCHITETTURA DEL COMPOSITORE GENERATIVO
 
 Il motore Python di Gamma rappresenta l'intelligenza orchestrativa del sistema, traducendo le specifiche compositive ad alto livello in eventi sonori concreti. Per comprendere come questa trasformazione avvenga, è necessario esplorare l'architettura software sottostante, un'architettura che riflette anni di raffinamento iterativo e bilancia sapientemente requisiti apparentemente contraddittori: la necessità di controllo deterministico con la flessibilità generativa, l'efficienza computazionale con la ricchezza espressiva, la complessità interna con la semplicità d'uso.
 
-## 3.1 Design Pattern e Struttura delle Classi
+## Design Pattern e Struttura delle Classi
 
 L'architettura di Gamma si fonda su tre classi principali, ciascuna incarnando un aspetto fondamentale del processo compositivo. Questa tripartizione non è casuale, ma riflette una profonda comprensione di come la composizione algoritmica si articoli in domini distinti ma interconnessi.
 
@@ -83,7 +83,7 @@ Il **Strategy Pattern** si manifesta nei modelli temporali. Che si tratti di dis
 
 Il **Builder Pattern** appare nella costruzione incrementale dei file CSD. Invece di generare l'intero file in un colpo solo, il sistema lo costruisce pezzo per pezzo - prima le tabelle degli inviluppi, poi quelle dei ritmi, infine gli eventi - permettendo flessibilità e estensibilità.
 
-## 3.2 Pipeline di Elaborazione
+## Pipeline di Elaborazione
 
 Il flusso di elaborazione in Gamma non è semplicemente una sequenza di operazioni, ma una coreografia attentamente orchestrata che bilancia parallelismo e sincronizzazione, efficienza e controllo.
 
@@ -168,7 +168,7 @@ if fresh_data.get('render_jobs_info'):
 
 Questo meccanismo di merge selettivo permette di mantenere i dati di visualizzazione per i layer non modificati mentre aggiorna solo quelli cambiati. Il risultato è che anche composizioni massive possono essere ri-visualizzate in secondi invece che minuti.
 
-## 3.3 Gestione dello Stato Globale
+## Gestione dello Stato Globale
 
 La gestione dello stato in un sistema generativo presenta sfide uniche. Da un lato, lo stato globale facilita la coordinazione tra componenti; dall'altro, può creare accoppiamenti indesiderati e complicare il testing. Gamma adotta un approccio pragmatico che bilancia questi concern.
 

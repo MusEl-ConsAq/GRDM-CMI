@@ -1,8 +1,8 @@
-# CAPITOLO 5: CONTROLLO TEMPORALE E PROCESSAMENTO LAYER
+# CONTROLLO TEMPORALE E PROCESSAMENTO LAYER
 
 Il controllo temporale in un sistema compositivo generativo rappresenta una sfida particolare: deve essere sufficientemente flessibile per esprimere gesti musicali complessi, ma anche deterministico e riproducibile. Questo capitolo esamina come Gamma affronta questa sfida attraverso modelli temporali parametrizzabili e un sistema sofisticato di processamento dei layer compositivi.
 
-## 5.1 TimeScheduler e Modelli Temporali
+## TimeScheduler e Modelli Temporali
 
 La classe TimeScheduler incapsula la logica di distribuzione temporale degli eventi, offrendo diversi modelli che corrispondono a gesti musicali archetipici. La scelta di separare questa funzionalità in una classe dedicata riflette il riconoscimento che il tempo musicale richiede un trattamento specializzato.
 
@@ -118,7 +118,7 @@ Ogni modello temporale suggerisce particolari applicazioni musicali:
 
 La possibilità di cambiare modello per ogni layer permette la sovrapposizione di diverse logiche temporali, creando poliritmie e politemporalità complesse.
 
-## 5.2 Processamento Layer
+## Processamento Layer
 
 Il processamento dei layer rappresenta il cuore operativo del sistema, dove le specifiche astratte si trasformano in eventi concreti. Il metodo `_process_layer` gestisce questa trasformazione con attenzione particolare ai dettagli temporali e alla gestione delle risorse.
 
@@ -225,7 +225,7 @@ params['durata_totale'] = min(desired_total_duration, available_duration)
 
 Questo meccanismo permette agli ultimi eventi di un layer di "sfumare" oltre il lifespan nominale, creando code più naturali. È particolarmente utile per evitare troncamenti bruschi in texture continue.
 
-## 5.3 Sistema Multi-Documento e Parti
+## Sistema Multi-Documento e Parti
 
 Gamma supporta composizioni strutturate su multiple scale temporali attraverso un sistema gerarchico che va dal documento YAML alle singole note.
 

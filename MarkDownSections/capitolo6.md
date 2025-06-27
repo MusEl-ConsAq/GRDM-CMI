@@ -1,8 +1,8 @@
-# CAPITOLO 6: SINTASSI E SEMANTICA COMPOSITIVA
+# SINTASSI E SEMANTICA COMPOSITIVA
 
 YAML (YAML Ain't Markup Language) emerge in Gamma non solo come formato di configurazione, ma come vero e proprio linguaggio di partitura per la composizione algoritmica. La scelta di YAML rispetto ad altri formati riflette la necessità di bilanciare leggibilità umana con precisione computazionale, creando un ponte tra l'intuizione compositiva e l'esecuzione algoritmica.
 
-## 6.1 Struttura Gerarchica
+## Struttura Gerarchica
 
 La struttura compositiva in Gamma segue una gerarchia rigorosa che rispecchia l'organizzazione tradizionale della musica occidentale, adattandola alle esigenze della generazione algoritmica.
 
@@ -62,7 +62,7 @@ Il sistema implementa un modello di eredità implicita dove i valori di default 
 
 Questa eredità permette specifiche concise quando i defaults sono appropriati, ma mantiene la possibilità di override granulare quando necessario. Il meccanismo di normalizzazione in Python garantisce che anche parametri specificati in forma abbreviata vengano espansi nella forma completa prima del processing.
 
-## 6.2 Definizione delle Maschere
+## Definizione delle Maschere
 
 Le maschere di tendenza rappresentano il cuore semantico del sistema, trasformando il YAML da semplice formato di dati a linguaggio espressivo per la composizione.
 
@@ -117,13 +117,13 @@ Non tutti i parametri supportano l'interpolazione. La distinzione riflette la na
 - Pesi di scelte discrete (quando le scelte sono identiche)
 
 **Non Interpolabili**:
-- Stringhe che rappresentano categorie (tipo_ritmi quando usa categorie)
-- Liste di valori (explicit_values per ritmi)
-- Parametri strutturali (timing_model)
+- Stringhe che rappresentano categorie (`tipo_ritmi` quando usa categorie)
+- Liste di valori (`explicit_values` per ritmi)
+- Parametri strutturali (`timing_model`)
 
 Questa distinzione è gestita automaticamente dal sistema di interpolazione, che applica strategie appropriate per ogni tipo.
 
-## 6.3 Controlli Avanzati
+## Controlli Avanzati
 
 Oltre ai parametri musicali di base, Gamma offre controlli avanzati che permettono di gestire aspetti sottili ma cruciali della generazione.
 

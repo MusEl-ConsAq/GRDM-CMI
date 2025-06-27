@@ -1,8 +1,8 @@
-# CAPITOLO 1: L'ORCHESTRA GAMMA - ARCHITETTURA E FLUSSO SONORO (versione rivista)
+# L'ORCHESTRA GAMMA 
 
 L'orchestra Csound di Gamma rappresenta il cuore pulsante del sistema di sintesi, dove i parametri astratti generati dal motore Python si trasformano in eventi sonori concreti. Questo capitolo esplora in dettaglio l'architettura degli strumenti principali e il flusso di elaborazione che porta dal numero al suono.
 
-## 1.1 Lo Strumento Voce: Generatore di Comportamenti
+## Lo Strumento Voce: Generatore di Comportamenti
 
 Lo strumento `Voce` costituisce il livello più alto della gerarchia di sintesi in Gamma. Non genera direttamente suoni, ma orchestra la creazione di sequenze di eventi sonori secondo logiche compositive complesse. La sua definizione inizia con una ricca parametrizzazione:
 
@@ -35,12 +35,12 @@ instr Voce
 
 Ogni parametro ha un significato musicale preciso:
 
-- **i_CAttacco** e **i_Durata**: definiscono la finestra temporale in cui il comportamento è attivo
-- **i_RitmiTab**: punta a una tabella contenente la sequenza di valori ritmici che determinano sia la temporalità che le frequenze degli eventi
-- **i_DurataArmonica**: il valore di riferimento per il calcolo delle durate reali degli eventi
-- **i_Ottava** e **i_Registro**: coordinate nello spazio delle altezze di partenza
-- **i_ottava_arrivo** e **i_registro_arrivo**: destinazione per eventuali glissandi
-- **i_NonlinearMode**: seleziona l'algoritmo di generazione per nuovi ritmi
+- ` i_CAttacco`  e `i_Durata`: definiscono la finestra temporale in cui il comportamento è attivo
+- `i_RitmiTab`: punta a una tabella contenente la sequenza di valori ritmici che determinano sia la temporalità che le frequenze degli eventi
+- `i_DurataArmonica`: il valore di riferimento per il calcolo delle durate reali degli eventi
+- `i_Ottava` e `i_Registro`: coordinate nello spazio delle altezze di partenza
+- `i_ottava_arrivo` e `i_registro_arrivo`: destinazione per eventuali glissandi
+- `i_NonlinearMode`: seleziona l'algoritmo di generazione per nuovi ritmi
 
 ### Il Loop Generativo Principale
 
@@ -115,7 +115,7 @@ schedule "eventoSonoro", i_EventAttack - p2, i_EventDuration, i_DynamicIndex, i_
 
 Notare come `i_EventAttack - p2` converta il tempo assoluto in tempo relativo all'inizio dello strumento Voce, mantenendo la coerenza temporale nella gerarchia degli strumenti.
 
-## 1.2 EventoSonoro: Dal Parametro al Suono
+## EventoSonoro: Dal Parametro al Suono
 
 Lo strumento `eventoSonoro` è responsabile della generazione effettiva del suono. Riceve i parametri calcolati da Voce e li trasforma in segnale audio attraverso sintesi e processamento.
 
@@ -341,7 +341,7 @@ asigEnv dcblock asigEnvPre
 
 L'inviluppo di sezione permette modulazioni globali su tutti gli eventi di una sezione, mentre l'inviluppo locale (potenzialmente derivato dalle armoniche spaziali) definisce la forma del singolo evento.
 
-## 1.3 Il Sistema di Intonazione Pitagorica
+## Il Sistema di Intonazione Pitagorica
 
 Il sistema di altezze in Gamma si basa su una implementazione personalizzata dell'intonazione pitagorica, gestita dall'opcode `GenPythagFreqs`:
 
@@ -441,7 +441,7 @@ L'uso dell'intonazione pitagorica invece del temperamento equabile aggiunge ulte
 
 L'orchestra Gamma dimostra come un'architettura ben progettata possa creare connessioni profonde tra parametri apparentemente indipendenti, trasformando relazioni numeriche astratte in strutture musicali percettivamente significative. La gerarchia Voce → eventoSonoro, supportata dal sistema di intonazione pitagorica, dalle sofisticate tecniche di compensazione isofonica e dal sistema di armoniche spaziali, fornisce al compositore uno strumento di straordinaria flessibilità espressiva, capace di generare tessiture sonore complesse da specifiche relativamente semplici.
 
-## 1.4 NonlinearFunc: Il Generatore di Ritmi Caotici
+## NonlinearFunc: Il Generatore di Ritmi Caotici
 
 L'opcode `NonlinearFunc` rappresenta uno degli elementi più innovativi di Gamma, fornendo un sistema sofisticato per la generazione di sequenze ritmiche che evolvono nel tempo secondo principi deterministici, periodici o caotici. Questo UDO (User Defined Opcode) estende le possibilità compositive oltre i pattern ritmici predefiniti, permettendo l'esplorazione di territori ritmici emergenti.
 
@@ -463,10 +463,10 @@ opcode NonlinearFunc, i, ippo
 ```
 
 L'opcode accetta quattro parametri:
-- **iX**: Il valore di input, tipicamente il ritmo precedente nella sequenza
-- **iMode**: Selettore della modalità operativa (0-3)
-- **iMinVal**: Valore minimo del range di output (default: 1)
-- **iMaxVal**: Valore massimo del range di output (default: 35)
+- `iX`: Il valore di input, tipicamente il ritmo precedente nella sequenza
+- `iMode`: Selettore della modalità operativa (0-3)
+- `iMinVal`: Valore minimo del range di output (default: 1)
+- `iMaxVal`: Valore massimo del range di output (default: 35)
 
 La prima operazione importante è la normalizzazione e limitazione dei valori di input per garantire stabilità numerica. Il valore di iX viene limitato tra 1 e 100 per evitare overflow o comportamenti indefiniti nelle funzioni matematiche successive.
 
@@ -579,9 +579,9 @@ La generazione dei seed utilizza moltiplicatori irrazionali approssimati:
 Questi valori garantiscono che i tre seed evolvano a velocità diverse e incommensurabili, massimizzando la complessità dell'output.
 
 Le tre funzioni non lineari utilizzano:
-- **sin** con accoppiamento additivo: sensibile alle fasi relative
-- **cos** con accoppiamento additivo: sfasato di π/2 rispetto a sin
-- **tan** con modulo: introduce discontinuità controllate
+- `sin` con accoppiamento additivo: sensibile alle fasi relative
+- `cos` con accoppiamento additivo: sfasato di π/2 rispetto a sin
+- `tan` con modulo: introduce discontinuità controllate
 
 ```csound
     ; 2. Componente casuale (40%)

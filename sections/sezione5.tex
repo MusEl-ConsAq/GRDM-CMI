@@ -1,10 +1,10 @@
 % --- Contenuto LaTeX autogenerato da capitolo5.md (sezione 6) ---
 
-\section{CAPITOLO 5: CONTROLLO TEMPORALE E PROCESSAMENTO LAYER}
+\section{CONTROLLO TEMPORALE E PROCESSAMENTO LAYER}
 Il controllo temporale in un sistema compositivo generativo rappresenta una sfida particolare: deve essere sufficientemente flessibile per esprimere gesti musicali complessi, ma anche deterministico e riproducibile. Questo capitolo esamina come Gamma affronta questa sfida attraverso modelli temporali parametrizzabili e un sistema sofisticato di processamento dei layer compositivi.
-\section{5.1 TimeScheduler e Modelli Temporali}
+\subsection{TimeScheduler e Modelli Temporali}
 La classe TimeScheduler incapsula la logica di distribuzione temporale degli eventi, offrendo diversi modelli che corrispondono a gesti musicali archetipici. La scelta di separare questa funzionalità in una classe dedicata riflette il riconoscimento che il tempo musicale richiede un trattamento specializzato.
-\subsection{Implementazione dei Modelli Base}
+\subsubsection{Implementazione dei Modelli Base}
 Il metodo centrale \texttt{generate\_onsets} implementa cinque modelli temporali distinti:
 
 \begin{lstlisting}[language=Python]
@@ -19,7 +19,7 @@ base_progress = np.linspace(0, 1, num_events, endpoint=False)
 
 La generazione inizia sempre con una progressione lineare normalizzata, che viene poi trasformata secondo il modello scelto. Questa architettura a due fasi separa la logica di distribuzione dalla durata effettiva, permettendo riutilizzo e composizione dei modelli.
 
-**Modello Lineare**: La distribuzione di default, dove gli eventi sono equidistanti:
+\textbf{Modello Lineare}: La distribuzione di default, dove gli eventi sono equidistanti:
 \begin{lstlisting}[language=Python]
 if model_type == 'linear':
     final_progress = base_progress
@@ -27,7 +27,7 @@ if model_type == 'linear':
 
 Sebbene semplice, questo modello è fondamentale per creare pulsazioni regolari o griglie ritmiche di riferimento.
 
-**Modello Ritardando**: Gli eventi rallentano progressivamente:
+\textbf{Modello Ritardando}: Gli eventi rallentano progressivamente:
 \begin{lstlisting}[language=Python]
 elif model_type == 'ritardando':
     shape = model.get('shape', 2.0)
@@ -36,23 +36,23 @@ elif model_type == 'ritardando':
 
 La funzione potenza con esponente > 1 crea una curva che sale rapidamente all'inizio e poi si appiattisce. Musicalmente, questo corrisponde a eventi che iniziano ravvicinati e gradualmente si diradano. Il parametro \texttt{shape} controlla l'intensità dell'effetto: valori più alti creano ritardandi più drammatici.
 
-**Modello Accelerando**: L'inverso del ritardando:
+\textbf{Modello Accelerando}: L'inverso del ritardando:
 \begin{lstlisting}[language=Python]
 elif model_type == 'accelerando':
     shape = model.get('shape', 2.0)
     final_progress = 1 - (1 - base_progress) ** shape
 \end{lstlisting}
 
-La formula \texttt{1 - (1 - x) ** shape} è matematicamente elegante: inverte la progressione, applica la potenza, e inverte di nuovo. Il risultato è una curva che parte lentamente e accelera, creando tensione crescente.
+La formula \texttt{1 {-} (1 {-} x) ** shape} è matematicamente elegante: inverte la progressione, applica la potenza, e inverte di nuovo. Il risultato è una curva che parte lentamente e accelera, creando tensione crescente.
 
-**Modello Stocastico**: Distribuzione casuale ma ordinata:
+\textbf{Modello Stocastico}: Distribuzione casuale ma ordinata:
 \begin{lstlisting}[language=Python]
 elif model_type == 'stochastic':
     final_progress = np.sort(np.random.rand(num_events))
 \end{lstlisting}
 
-Generare valori casuali e poi ordinarli garantisce che gli eventi mantengano una progressione temporale coerente pur essendo distribuiti irregolarmente. Questo modello è particolarmente efficace per creare texture ''naturali'' o ''organiche''.
-\subsection{L'Algoritmo Breakpoint Avanzato}
+Generare valori casuali e poi ordinarli garantisce che gli eventi mantengano una progressione temporale coerente pur essendo distribuiti irregolarmente. Questo modello è particolarmente efficace per creare texture \textit{naturali} o \textit{organiche}.
+\subsubsection{L'Algoritmo Breakpoint Avanzato}
 Il modello più sofisticato è il breakpoint, che permette di definire curve temporali arbitrarie attraverso punti di controllo:
 
 \begin{lstlisting}[language=Python]
@@ -70,14 +70,16 @@ t_start, v_start = start_point[0], start_point[1]
 
 Ogni segmento tra due punti può avere la propria curva di shaping. Consideriamo un esempio concreto:
 
-\begin{lstlisting}[language=Yaml]
+\begin{lstlisting}[language=Python]
 timing_model:
   type: breakpoint
   points:
-    - [0.0, 0.0]      # Inizio
-    - [0.3, 0.7, 0.5] # 70% degli eventi nei primi 30% del tempo, curva ease-out
-    - [0.8, 0.9, 2.0] # Solo 20% degli eventi nel mezzo, curva ease-in
-    - [1.0, 1.0]      # Fine
+\begin{itemize}
+    \item [0.0, 0.0]      # Inizio
+    \item [0.3, 0.7, 0.5] # 70% degli eventi nei primi 30% del tempo, curva ease-out
+    \item [0.8, 0.9, 2.0] # Solo 20% degli eventi nel mezzo, curva ease-in
+    \item [1.0, 1.0]      # Fine
+\end{itemize}
 \end{lstlisting}
 
 Questo creerebbe un profilo temporale con alta densità iniziale, rarefazione centrale, e piccola ripresa finale.
@@ -98,18 +100,20 @@ final_progress[segment_mask] = interpolated_values
 \end{lstlisting}
 
 La normalizzazione del tempo all'interno di ogni segmento permette di applicare trasformazioni locali senza influenzare gli altri segmenti. Questo approccio modulare rende possibile la costruzione di profili temporali estremamente complessi mantenendo il controllo locale.
-\subsection{Implicazioni Musicali dei Modelli Temporali}
+\subsubsection{Implicazioni Musicali dei Modelli Temporali}
 Ogni modello temporale suggerisce particolari applicazioni musicali:
 
-- **Lineare**: Ideale per strutture metriche, ostinati, o quando si vuole enfatizzare regolarità
-- **Accelerando/Ritardando**: Per creare archi di tensione, approcci a climax, o dissolvenze
-- **Stocastico**: Per texture pointillistiche, imitazione di processi naturali, rottura della griglia metrica
-- **Breakpoint**: Per gesti complessi, forme composite, sincronizzazione con altri parametri musicali
+\begin{itemize}
+    \item \textbf{Lineare}: Ideale per strutture metriche, ostinati, o quando si vuole enfatizzare regolarità
+    \item \textbf{Accelerando/Ritardando}: Per creare archi di tensione, approcci a climax, o dissolvenze
+    \item \textbf{Stocastico}: Per texture pointillistiche, imitazione di processi naturali, rottura della griglia metrica
+    \item \textbf{Breakpoint}: Per gesti complessi, forme composite, sincronizzazione con altri parametri musicali
+\end{itemize}
 
 La possibilità di cambiare modello per ogni layer permette la sovrapposizione di diverse logiche temporali, creando poliritmie e politemporalità complesse.
-\section{5.2 Processamento Layer}
+\subsection{Processamento Layer}
 Il processamento dei layer rappresenta il cuore operativo del sistema, dove le specifiche astratte si trasformano in eventi concreti. Il metodo \texttt{\_process\_layer} gestisce questa trasformazione con attenzione particolare ai dettagli temporali e alla gestione delle risorse.
-\subsection{Calcolo del Lifespan e Timing Assoluto}
+\subsubsection{Calcolo del Lifespan e Timing Assoluto}
 Ogni layer può essere attivo solo per una porzione della sezione che lo contiene:
 
 \begin{lstlisting}[language=Python]
@@ -124,13 +128,13 @@ def _process_layer(self, layer, layer_idx, current_time_offset,
     layer_duration_abs = (end_ratio - start_ratio) * scaled_section_duration
 
 if layer_duration_abs <= 0:
-        print(f''ATTENZIONE: Layer '{layer_name}' ha durata nulla o negativa.'')
+        print(f"ATTENZIONE: Layer '{layer_name}' ha durata nulla o negativa.")
         return [], []
 \end{lstlisting}
 
-Il concetto di lifespan permette coreografie temporali sofisticate. Un layer con \texttt{lifespan: [0.2, 0.8]} sarà attivo solo nella parte centrale della sezione (dal 20% all'80%), permettendo entrate e uscite scaglionate. La conversione da ratios relativi a tempi assoluti è cruciale per la sincronizzazione globale.
-\subsection{Il Sistema di Safety Buffer Adattivo}
-Uno dei problemi pratici nella generazione di eventi è evitare che l'ultimo evento di una sezione ''sbordi'' nella successiva. Il safety buffer risolve questo problema:
+Il concetto di lifespan permette coreografie temporali sofisticate. Un layer con \texttt{lifespan: [0.2, 0.8]} sarà attivo solo nella parte centrale della sezione (dal 20\% all'80\%), permettendo entrate e uscite scaglionate. La conversione da ratios relativi a tempi assoluti è cruciale per la sincronizzazione globale.
+\subsubsection{Il Sistema di Safety Buffer Adattivo}
+Uno dei problemi pratici nella generazione di eventi è evitare che l'ultimo evento di una sezione \textit{sbordi} nella successiva. Il safety buffer risolve questo problema:
 
 \begin{lstlisting}[language=Python]
 \section{Determina la maschera per il calcolo del buffer}
@@ -150,8 +154,8 @@ generation_duration = layer_duration_abs - safety_buffer
 \end{lstlisting}
 
 Il calcolo considera il caso peggiore: la durata armonica massima moltiplicata per il fattore di sovrapposizione massimo. Sottraendo questo valore dalla durata disponibile, si garantisce che anche l'evento più lungo non ecceda i limiti temporali.
-\subsection{Generazione degli Eventi per Cluster}
-Il sistema supporta la generazione di ''cluster'' di eventi per ogni punto temporale:
+\subsubsection{Generazione degli Eventi per Cluster}
+Il sistema supporta la generazione di \textit{cluster} di eventi per ogni punto temporale:
 
 \begin{lstlisting}[language=Python]
 for onset_relative_to_layer in cluster_onsets_relative_to_layer:
@@ -168,7 +172,7 @@ for onset_relative_to_layer in cluster_onsets_relative_to_layer:
 \end{lstlisting}
 
 La densità del cluster può evolvere nel tempo per layer dinamici, permettendo texture che si addensano o si rarefanno. Ogni evento nel cluster riceve la stessa maschera di base ma genera parametri indipendenti, creando micro-variazioni attorno a un'identità comune.
-\subsection{Gestione del Jitter Temporale}
+\subsubsection{Gestione del Jitter Temporale}
 Per evitare una griglia temporale troppo rigida, il sistema introduce perturbazioni controllate:
 
 \begin{lstlisting}[language=Python]
@@ -177,8 +181,8 @@ jitter = np.random.normal(loc=0.0, scale=jitter_scale)
 final_event_time = absolute_onset_time + jitter
 \end{lstlisting}
 
-Il jitter segue una distribuzione normale centrata su zero, meaning che gli eventi tendono a rimanere vicini alla loro posizione nominale ma con occasionali deviazioni. Il parametro \texttt{onset\_jitter} controlla l'ampiezza di queste deviazioni: valori piccoli (0.01) creano micro-deviazioni quasi impercettibili, valori più grandi (0.1) possono creare sensazioni di ''scivolamento'' temporale.
-\subsection{Il Sistema di Leeway}
+Il jitter segue una distribuzione normale centrata su zero, meaning che gli eventi tendono a rimanere vicini alla loro posizione nominale ma con occasionali deviazioni. Il parametro \texttt{onset\_jitter} controlla l'ampiezza di queste deviazioni: valori piccoli (0.01) creano micro-deviazioni quasi impercettibili, valori più grandi (0.1) possono creare sensazioni di \textit{scivolamento} temporale.
+\subsubsection{Il Sistema di Leeway}
 Il parametro \texttt{leeway\_fine\_layer} aggiunge flessibilità alla fine del layer:
 
 \begin{lstlisting}[language=Python]
@@ -192,10 +196,10 @@ available_duration = max(0.0, layer_end_time_with_leeway - final_event_time)
 params['durata_totale'] = min(desired_total_duration, available_duration)
 \end{lstlisting}
 
-Questo meccanismo permette agli ultimi eventi di un layer di ''sfumare'' oltre il lifespan nominale, creando code più naturali. È particolarmente utile per evitare troncamenti bruschi in texture continue.
-\section{5.3 Sistema Multi-Documento e Parti}
+Questo meccanismo permette agli ultimi eventi di un layer di \textit{sfumare} oltre il lifespan nominale, creando code più naturali. È particolarmente utile per evitare troncamenti bruschi in texture continue.
+\subsection{Sistema Multi-Documento e Parti}
 Gamma supporta composizioni strutturate su multiple scale temporali attraverso un sistema gerarchico che va dal documento YAML alle singole note.
-\subsection{Architettura Multi-Documento}
+\subsubsection{Architettura Multi-Documento}
 Il supporto per documenti YAML multipli permette di organizzare composizioni lunghe in parti gestibili:
 
 \begin{lstlisting}[language=Python]
@@ -208,13 +212,13 @@ for i, composition in enumerate(docs):
             continue
 
 if not isinstance(composition, list):
-            print(f''ERRORE nel documento #{i+1}: deve contenere una lista di sezioni.'')
+            print(f"ERRORE nel documento #{i+1}: deve contenere una lista di sezioni.")
             sys.exit(1)
         composizioni.append(composition)
 \end{lstlisting}
 
-Ogni documento YAML può rappresentare una parte o movimento della composizione. La separazione con \texttt{---} nel file YAML diventa una separazione logica nel processing, permettendo di lavorare su parti individuali mantenendo la coerenza del tutto.
-\subsection{Gestione degli Offset tra Sezioni}
+Ogni documento YAML può rappresentare una parte o movimento della composizione. La separazione con \texttt{{-}{-}{-}} nel file YAML diventa una separazione logica nel processing, permettendo di lavorare su parti individuali mantenendo la coerenza del tutto.
+\subsubsection{Gestione degli Offset tra Sezioni}
 Il sistema permette controllo preciso sulla relazione temporale tra sezioni:
 
 \begin{lstlisting}[language=Python]
@@ -230,19 +234,21 @@ for sec_idx, section in enumerate(part_structure):
 \end{lstlisting}
 
 Gli offset possono essere:
-- **Positivi**: Creano pause tra sezioni
-- **Zero**: Sezioni contigue senza pause
-- **Negativi**: Permettono sovrapposizioni controllate
+\begin{itemize}
+    \item \textbf{Positivi}: Creano pause tra sezioni
+    \item \textbf{Zero}: Sezioni contigue senza pause
+    \item \textbf{Negativi}: Permettono sovrapposizioni controllate
+\end{itemize}
 
 Questa flessibilità permette di creare forme musicali complesse dove sezioni possono dissolversi l'una nell'altra o essere separate da silenzi strutturali.
-\subsection{Assemblaggio Gerarchico}
+\subsubsection{Assemblaggio Gerarchico}
 L'assemblaggio finale segue la gerarchia strutturale:
 
 \begin{lstlisting}[language=Python]
 \section{Layer -> Sezioni}
 section_assembly_jobs.append({
     'name': section_name_base,
-    'csd_path': dirs['sections_csd'] / f''{section_name_base}_assembler.csd'',
+    'csd_path': dirs['sections_csd'] / f"{section_name_base}_assembler.csd",
     'output_wav': section_wav_path,
     'input_layers': layer_files_for_this_section
 })
@@ -254,7 +260,7 @@ final_assembly_parts.append({
 \end{lstlisting}
 
 Questo approccio bottom-up permette parallelizzazione efficiente: mentre alcune sezioni sono ancora in rendering, altre possono già essere assemblate. Il sistema genera automaticamente file CSD di assemblaggio che utilizzano l'opcode \texttt{diskin2} per combinare i file WAV con timing preciso.
-\subsection{Gestione dei Silenzi Strutturali}
+\subsubsection{Gestione dei Silenzi Strutturali}
 Quando una sezione non contiene layer attivi, il sistema genera file di silenzio:
 
 \begin{lstlisting}[language=Python]

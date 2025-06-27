@@ -1,8 +1,8 @@
-# CAPITOLO 7: GENERAZIONE E RENDERING
+# GENERAZIONE E RENDERING
 
 La trasformazione da specifiche YAML a suono coinvolge un processo multi-fase che genera file CSD Csound, orchestra processi di rendering paralleli, e assembla i risultati in una composizione coerente. Questo capitolo esamina i meccanismi tecnici che rendono possibile questa trasformazione, con particolare attenzione all'ottimizzazione delle risorse computazionali e alla gestione della complessità.
 
-## 7.1 Generazione File CSD
+## Generazione File CSD
 
 Il file CSD (Csound Unified File Format) combina orchestra e partitura in un singolo documento. In Gamma, la generazione di questi file avviene dinamicamente, adattando un template alle specifiche della composizione.
 
@@ -74,7 +74,7 @@ score_lines += (f'i "Voce"\t{event_time:.4f}\t{p["durata_totale"]:.3f}\t'
 
 La precisione decimale varia per parametro: 4 decimali per il tempo di attacco garantiscono precisione al decimo di millisecondo, mentre 6 decimali per l'indice dinamico permettono interpolazioni fluide. L'uso di `get()` con default per parametri opzionali previene errori mantenendo retrocompatibilità.
 
-## 7.2 Rendering Parallelo
+## Rendering Parallelo
 
 Il rendering rappresenta il collo di bottiglia computazionale del sistema. Gamma affronta questa sfida attraverso parallelizzazione intelligente che massimizza l'utilizzo delle risorse mantenendo la semplicità del modello di programmazione.
 
@@ -162,7 +162,7 @@ if should_render:
 
 Questa ottimizzazione può ridurre i tempi di rendering del 90% durante l'iterazione compositiva.
 
-## 7.3 Assemblaggio Multi-Livello
+## Assemblaggio Multi-Livello
 
 L'assemblaggio segue la gerarchia compositiva dal basso verso l'alto, permettendo parallelizzazione dove possibile e garantendo coerenza strutturale.
 

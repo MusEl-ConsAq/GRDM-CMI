@@ -2,58 +2,45 @@
 \usepackage{ME_AQ_temp}
 \usepackage{tabularx}
 \usepackage{listings}
-\usepackage{xcolor} % Necessario per usare i colori
+\usepackage{xcolor}
 
-% Definisci i colori che userai per il codice
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.98,0.98,0.98} % Un grigio molto chiaro per lo sfondo
+\setmonofont{Fira Code}
+% \setmonofont{Source Code Pro}
+% \setmonofont{DejaVu Sans Mono}
+% \setmonofont{JuliaMono} % Ottimo per caratteri scientifici e matematici
 
-% Definisci uno stile personalizzato per tutti i tuoi listati
-\lstdefinestyle{mystyle}{
-    backgroundcolor=\color{backcolour},   % Sfondo del blocco di codice
-    commentstyle=\color{codegreen},       % Colore per i commenti
-    keywordstyle=\color{magenta},         % Colore per le parole chiave del linguaggio
-    numberstyle=\tiny\color{codegray},    % Stile per i numeri di riga
-    stringstyle=\color{codepurple},       % Colore per le stringhe
-    basicstyle=\ttfamily\footnotesize,    % Font di base (monospaziato, piccolo)
-    
-    % --- OPZIONI FONDAMENTALI PER I MARGINI ---
-    breakatwhitespace=false,              % Permette di spezzare le righe ovunque, non solo sugli spazi
-    breaklines=true,                      % Abilita l'andare a capo automatico
-    
-    % --- Altre opzioni utili per la leggibilità ---
-    captionpos=b,                         % Posizione della didascalia (b=bottom, t=top)
-    keepspaces=true,                      % Mantiene gli spazi nel codice, fondamentale per l'indentazione
-    numbers=left,                         % Posizione dei numeri di riga
-    numbersep=5pt,                        % Distanza tra numeri di riga e codice
-    showspaces=false,                     % Non mostrare gli spazi con un simbolo speciale
-    showstringspaces=false,               % Non mostrare gli spazi nelle stringhe con un simbolo speciale
-    showtabs=false,                       % Non mostrare i tab con un simbolo speciale
-    tabsize=2,                            % Dimensione di un carattere di tabulazione
-    frame=single,                         % Aggiunge un bordo attorno al blocco di codice
-    framerule=0.5pt,                      % Spessore del bordo
-    rulecolor=\color{black},              % Colore del bordo
-    xleftmargin=1em,                      % Margine sinistro del blocco
-    xrightmargin=1em                      % Margine destro del blocco
+\usepackage{listings}
+\usepackage{microtype}
+% \sloppy % Prova a rimuoverlo o commentarlo. Usa emergencystretch che è meno aggressivo.
+\emergencystretch=2em % Ho aumentato leggermente il valore, puoi regolarlo
+
+\lstset{
+    % Il font di base ora sarà quello impostato da \setmonofont
+    basicstyle=\ttfamily\footnotesize, 
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numbersep=5pt,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+    breakindent=1.5em,
+    breakautoindent=true,
+    % La riga 'literate' non è più necessaria! Il nuovo font ha già i simboli ≈, ✓, ✗, ecc.
+    % literate={≈}{{$\approx$}}1 
 }
-
 % Applica questo stile a tutti gli ambienti lstlisting del documento
-\lstset{style=mystyle}
 %% -------------------------------------- %%
 %  - impostare il titolo della tesina in entrambe le righe 
 % 
 %% -------------------------------------- %%
 
-\newcommand{\mycustomtitle}{Titolo della Tesina}
+\newcommand{\mycustomtitle}{Gamma}
 % Definisci un titolo personalizzato
 \newcommand{\setmytitle}[1]{\renewcommand{\mycustomtitle}{#1}}
 
 % Definizione del titolo e dell'autore
-\title{Corsi Accademici di Musica Elettronica DCPL34 Conservatorio A. Casella, L'Aquila \\ \fontsize{14}{17}\bfseries\uppercase{Titolo della Tesina}}
-\author{Nome Cognome \\ esame di \bfseries{Storia della Musica Elettroacustica} e \\ \bfseries{Analisi della Musica Elettroacustica}}
-\date{xx/xx/xxxx}
+\title{Corsi Accademici di Musica Elettronica DCPL34 Conservatorio A. Casella, L'Aquila \\ \fontsize{14}{17}\bfseries\uppercase{Gamma}}
+\author{Giulio Romano De Mattia \\ esame di \bfseries{Composizione Musicale Informatica} }
+\date{27/06/2025}
 
 % Sovrascrivi le impostazioni di hyperref per l'indice
 \hypersetup{
@@ -71,7 +58,7 @@
     \textbf{\fontsize{12}{15}\selectfont{Sommario}}
 \end{center}
 
-Testo del sommario...
+sommario
 
 \newpage
 % Genera l'indice
@@ -83,8 +70,8 @@ Testo del sommario...
 \input{sections/all.tex}
 
 % Aggiungi la bibliografia
-\newpage % ---- Inizia una nuova pagina prima della bibliografia
-\bibliographystyle{plain}
-\bibliography{bibliography}
+%\newpage % ---- Inizia una nuova pagina prima della bibliografia
+%\bibliographystyle{plain}
+%\bibliography{bibliography}
 
 \end{document}

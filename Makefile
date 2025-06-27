@@ -16,9 +16,6 @@ all: $(FILENAME).pdf
 # Regola per compilare il documento LaTeX
 $(FILENAME).pdf: $(FILENAME).tex
 	$(LATEX) $(LATEX_OPTIONS) $(FILENAME).tex
-	$(BIBTEX) $(FILENAME)
-	$(LATEX) $(LATEX_OPTIONS) $(FILENAME).tex
-	$(LATEX) $(LATEX_OPTIONS) $(FILENAME).tex
 
 # Pulisce i file temporanei generati durante la compilazione
 clean:

@@ -1,8 +1,8 @@
-# CAPITOLO 2: CONFIGURAZIONE E PARAMETRIZZAZIONE
+# CONFIGURAZIONE E PARAMETRIZZAZIONE
 
 Il sistema Gamma implementa una separazione netta tra logica di sintesi e configurazione dei parametri, permettendo al compositore di modificare profondamente il comportamento del sistema senza toccare il codice Csound. Questo approccio modulare facilita la sperimentazione e l'estensione del sistema.
 
-## 2.1 Il File tables.yaml
+## Il File tables.yaml
 
 Il file `tables.yaml` rappresenta il cuore configurabile del sistema, definendo tutte le tabelle di forma d'onda e inviluppo utilizzate nella sintesi. La sua struttura gerarchica separa chiaramente gli inviluppi per eventi singoli da quelli per sezioni intere.
 
@@ -40,7 +40,7 @@ La scelta della GEN routine 6 (segmenti cubici) invece della più comune GEN 7 (
 
 Il sistema distingue due categorie di inviluppi con funzioni distinte:
 
-**Event Envelopes** - Applicati ai singoli eventi sonori:
+`Event Envelopes` Applicati ai singoli eventi sonori:
 
 ```yaml
 event_envelopes:
@@ -67,7 +67,7 @@ L'inviluppo `impulsivo` utilizza GEN 5 (segmenti esponenziali) per creare un att
 
 L'inviluppo `lento` con GEN 7 crea un attacco graduale per 3/4 della durata, ideale per tessiture ambient o crescendi graduali.
 
-**Section Envelopes** - Modulano interi gruppi di eventi:
+`Section Envelopes` Modulano interi gruppi di eventi:
 
 ```yaml
 section_envelopes:
@@ -96,22 +96,22 @@ endif
 
 Le GEN routines utilizzate nel sistema sono scelte per le loro caratteristiche specifiche:
 
-**GEN 5** - Segmenti esponenziali:
+`GEN 5` Segmenti esponenziali:
 - Ideale per decadimenti naturali e attacchi percussivi
 - Richiede valori non-zero per evitare singolarità matematiche
 - Parametri: [valore, durata, valore, durata, ...]
 
-**GEN 6** - Segmenti cubici:
+`GEN 6` Segmenti cubici:
 - Transizioni morbide senza discontinuità nelle derivate
 - Perfetta per inviluppi che devono suonare "organici"
 - Stessa sintassi di GEN 5 ma interpolazione diversa
 
-**GEN 7** - Segmenti lineari:
+`GEN 7` Segmenti lineari:
 - Controllo preciso e prevedibile
 - Efficiente computazionalmente
 - Ideale per forme geometriche precise
 
-**GEN 10** - Sintesi additiva:
+`GEN 10` Sintesi additiva:
 ```yaml
 plateau_forte:
   number: 23
@@ -121,7 +121,7 @@ plateau_forte:
 ```
 Usata qui in modo non convenzionale per creare un valore costante.
 
-## 2.2 Sistema di Macro e Costanti Globali
+## Sistema di Macro e Costanti Globali
 
 Il template CSD di Gamma definisce un sistema di macro che parametrizza l'intero spazio sonoro:
 
@@ -139,9 +139,9 @@ Il template CSD di Gamma definisce un sistema di macro che parametrizza l'intero
 
 Le macro `OTTAVE`, `INTERVALLI` e `REGISTRI` definiscono la risoluzione del sistema di intonazione:
 
-- **OTTAVE** (10): Copre l'intero range udibile da 32 Hz a ~32 kHz
-- **INTERVALLI** (200): Numero di divisioni per ottava nel sistema pitagorico
-- **REGISTRI** (50): Suddivisioni fini all'interno di ogni ottava
+- `OTTAVE` (10): Copre l'intero range udibile da 32 Hz a ~32 kHz
+- `INTERVALLI` (200): Numero di divisioni per ottava nel sistema pitagorico
+- `REGISTRI` (50): Suddivisioni fini all'interno di ogni ottava
 
 La relazione tra questi parametri determina la granularità frequenziale:
 ```
@@ -159,9 +159,9 @@ gi_eve_attacco ftgen 0, 0, 2^20, -2, 0
 gi_Intonazione ftgen 0, 0, $OTTAVE*$INTERVALLI+1, -2, 0
 ```
 
-**gi_eve_attacco**: Una tabella enorme (2^20 = 1.048.576 elementi) che memorizza i tempi di attacco di tutti gli eventi generati. La dimensione generosa permette composizioni estremamente lunghe senza rischio di overflow.
+`gi_eve_attacco`: Una tabella enorme (2^20 = 1.048.576 elementi) che memorizza i tempi di attacco di tutti gli eventi generati. La dimensione generosa permette composizioni estremamente lunghe senza rischio di overflow.
 
-**gi_Intonazione**: Contiene tutte le frequenze del sistema pitagorico. La dimensione è calcolata dinamicamente come `OTTAVE * INTERVALLI + 1`, dove il +1 gestisce casi limite di indicizzazione.
+`gi_Intonazione`: Contiene tutte le frequenze del sistema pitagorico. La dimensione è calcolata dinamicamente come `OTTAVE * INTERVALLI + 1`, dove il +1 gestisce casi limite di indicizzazione.
 
 L'allocazione avviene con `ftgen`:
 - Primo parametro (0): Numero di tabella assegnato automaticamente
@@ -182,7 +182,7 @@ ftfree i_TempRitmiTab, 0
 
 2. **Condivisione delle Tabelle Ritmiche**: Pattern identici condividono le stesse tabelle attraverso il sistema di mappatura in Python.
 
-3. **Inizializzazione Lazy**: Le tabelle vengono popolate solo quando necessario, come gi_Intonazione che viene riempita dallo strumento Init.
+3. **Inizializzazione Lazy**: Le tabelle vengono popolate solo quando necessario, come `gi_Intonazione` che viene riempita dallo strumento Init.
 
 ### Integrazione con Python
 

@@ -1,8 +1,8 @@
-# CAPITOLO 4: GENERAZIONE PARAMETRICA E MASCHERE DI TENDENZA
+# GENERAZIONE PARAMETRICA E MASCHERE DI TENDENZA
 
 La generazione parametrica costituisce il processo centrale attraverso cui le specifiche compositive astratte si trasformano in valori concreti per la sintesi. Questo capitolo analizza i meccanismi che permettono questa trasformazione, con particolare attenzione al concetto di maschera di tendenza e alle tecniche di interpolazione che permettono l'evoluzione temporale dei parametri.
 
-## 4.1 Il Metodo _generate_params_from_mask()
+## Il Metodo `_generate_params_from_mask()`
 
 Il metodo `_generate_params_from_mask()` rappresenta il punto di convergenza tra l'astrazione compositiva e la concretezza numerica. Con oltre 200 righe di codice, questo metodo implementa la logica che trasforma le maschere di tendenza definite in YAML in parametri specifici per ogni evento sonoro.
 
@@ -18,7 +18,7 @@ SKIPPED_KEYS = {
 }
 ```
 
-Questa distinzione è necessaria perché alcuni parametri non possono essere gestiti dal loop generico di generazione. Le chiavi di metadati come 'choices' e 'weights' non sono parametri in sé, ma descrivono come generare altri parametri. Altri, come 'dinamica' e 'tipo_ritmi', richiedono logiche di trasformazione complesse che vanno oltre la semplice generazione numerica.
+Questa distinzione è necessaria perché alcuni parametri non possono essere gestiti dal loop generico di generazione. Le chiavi di metadati come `choices` e `weights` non sono parametri in sé, ma descrivono come generare altri parametri. Altri, come `dinamica` e `tipo_ritmi`, richiedono logiche di trasformazione complesse che vanno oltre la semplice generazione numerica.
 
 ### Le Quattro Modalità di Generazione
 
@@ -130,7 +130,7 @@ else:
 
 Dieci tentativi bilanciano la probabilità di successo con la necessità di evitare loop infiniti. La validazione verifica vincoli come la durata minima degli eventi e la coerenza delle frequenze.
 
-## 4.2 Interpolazione per Layer Dinamici
+## Interpolazione per Layer Dinamici
 
 L'interpolazione delle maschere permette l'evoluzione graduale dei parametri nel tempo, trasformando specifiche statiche in processi dinamici. Il metodo `_interpolate_mask()` implementa questa trasformazione con attenzione particolare alla gestione di casi limite e parametri eterogenei.
 
@@ -216,7 +216,7 @@ Valori di shape diversi da 1.0 creano curve diverse:
 
 Questo controllo permette di modellare l'evoluzione temporale secondo necessità espressive specifiche.
 
-## 4.3 Sistema Gerarchico del Glissando
+## Sistema Gerarchico del Glissando
 
 Il glissando in Gamma non è semplicemente una transizione tra due frequenze, ma un sistema gerarchico che supporta molteplici modalità di specifica con priorità ben definite.
 

@@ -1,8 +1,8 @@
 % --- Contenuto LaTeX autogenerato da capitolo1.md (sezione 2) ---
 
-\section{CAPITOLO 1: L'ORCHESTRA GAMMA - ARCHITETTURA E FLUSSO SONORO (versione rivista)}
+\section{L'ORCHESTRA GAMMA}
 L'orchestra Csound di Gamma rappresenta il cuore pulsante del sistema di sintesi, dove i parametri astratti generati dal motore Python si trasformano in eventi sonori concreti. Questo capitolo esplora in dettaglio l'architettura degli strumenti principali e il flusso di elaborazione che porta dal numero al suono.
-\section{1.1 Lo Strumento Voce: Generatore di Comportamenti}
+\subsection{Lo Strumento Voce: Generatore di Comportamenti}
 Lo strumento \texttt{Voce} costituisce il livello più alto della gerarchia di sintesi in Gamma. Non genera direttamente suoni, ma orchestra la creazione di sequenze di eventi sonori secondo logiche compositive complesse. La sua definizione inizia con una ricca parametrizzazione:
 
 \begin{lstlisting}[language=C]
@@ -34,16 +34,18 @@ instr Voce
 
 Ogni parametro ha un significato musicale preciso:
 
-- **i_CAttacco** e **i_Durata**: definiscono la finestra temporale in cui il comportamento è attivo
-- **i_RitmiTab**: punta a una tabella contenente la sequenza di valori ritmici che determinano sia la temporalità che le frequenze degli eventi
-- **i_DurataArmonica**: il valore di riferimento per il calcolo delle durate reali degli eventi
-- **i_Ottava** e **i_Registro**: coordinate nello spazio delle altezze di partenza
-- **i_ottava_arrivo** e **i_registro_arrivo**: destinazione per eventuali glissandi
-- **i_NonlinearMode**: seleziona l'algoritmo di generazione per nuovi ritmi
-\subsection{Il Loop Generativo Principale}
+\begin{itemize}
+    \item \texttt{ i\_CAttacco}  e \texttt{i\_Durata}: definiscono la finestra temporale in cui il comportamento è attivo
+    \item \texttt{i\_RitmiTab}: punta a una tabella contenente la sequenza di valori ritmici che determinano sia la temporalità che le frequenze degli eventi
+    \item \texttt{i\_DurataArmonica}: il valore di riferimento per il calcolo delle durate reali degli eventi
+    \item \texttt{i\_Ottava} e \texttt{i\_Registro}: coordinate nello spazio delle altezze di partenza
+    \item \texttt{i\_ottava\_arrivo} e \texttt{i\_registro\_arrivo}: destinazione per eventuali glissandi
+    \item \texttt{i\_NonlinearMode}: seleziona l'algoritmo di generazione per nuovi ritmi
+\end{itemize}
+\subsubsection{Il Loop Generativo Principale}
 Il cuore dello strumento Voce è un loop while che genera eventi fino al raggiungimento della durata specificata:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 i_EventIdx = 0
 i_whileTime = 0
 
@@ -64,10 +66,10 @@ while i_whileTime < i_Durata do
 \end{lstlisting}
 
 Questo codice implementa una logica sofisticata: inizialmente legge i ritmi dalla tabella fornita, ma quando questa si esaurisce, genera nuovi valori usando l'opcode \texttt{NonlinearFunc}, creando potenzialmente sequenze infinite che evolvono secondo regole caotiche o deterministiche.
-\subsection{Calcolo Temporale degli Eventi}
+\subsubsection{Calcolo Temporale degli Eventi}
 Il timing di ogni evento dipende dal ritmo precedente secondo la formula:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 if i_EventIdx == 0 then
     i_EventAttack = i_CAttacco
 else
@@ -78,10 +80,10 @@ endif
 \end{lstlisting}
 
 Questa relazione inversamente proporzionale significa che valori ritmici più alti producono eventi più ravvicinati, creando accelerazioni, mentre valori bassi generano rarefazioni temporali.
-\subsection{Gestione della Tabella Ritmi Temporanea}
+\subsubsection{Gestione della Tabella Ritmi Temporanea}
 Una caratteristica importante è la creazione di una tabella temporanea estesa per i ritmi:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 i_LenRitmiTab = ftlen(i_RitmiTab)
 i_TempRitmiTab ftgen 0, 0, i_LenRitmiTab + 10000, -2, 0
 
@@ -95,20 +97,20 @@ od
 \end{lstlisting}
 
 Questo approccio permette di estendere dinamicamente la sequenza ritmica oltre i valori iniziali senza modificare la tabella originale, mantenendo la purezza dei dati di input mentre si esplora lo spazio generativo.
-\subsection{Sistema di Scheduling degli Eventi}
+\subsubsection{Sistema di Scheduling degli Eventi}
 La creazione effettiva degli eventi sonori avviene attraverso la chiamata a \texttt{schedule}:
 
-\begin{lstlisting}[language=Csound]
-schedule ''eventoSonoro'', i_EventAttack - p2, i_EventDuration, i_DynamicIndex, i_Freq1, i_Pos,
+\begin{lstlisting}[language=C]
+schedule "eventoSonoro", i_EventAttack - p2, i_EventDuration, i_DynamicIndex, i_Freq1, i_Pos,
         i_RitmoCorrente, i_Freq2, i_ifnAttacco, gi_Index, i_IdComp, i_SensoMovimento, 
         i_ifn_section_env, i_section_start_time, i_section_duration
 \end{lstlisting}
 
-Notare come \texttt{i\_EventAttack - p2} converta il tempo assoluto in tempo relativo all'inizio dello strumento Voce, mantenendo la coerenza temporale nella gerarchia degli strumenti.
-\section{1.2 EventoSonoro: Dal Parametro al Suono}
+Notare come \texttt{i\_EventAttack {-} p2} converta il tempo assoluto in tempo relativo all'inizio dello strumento Voce, mantenendo la coerenza temporale nella gerarchia degli strumenti.
+\subsection{EventoSonoro: Dal Parametro al Suono}
 Lo strumento \texttt{eventoSonoro} è responsabile della generazione effettiva del suono. Riceve i parametri calcolati da Voce e li trasforma in segnale audio attraverso sintesi e processamento.
-\subsection{Inizializzazione e Validazione Parametri}
-\begin{lstlisting}[language=Csound]
+\subsubsection{Inizializzazione e Validazione Parametri}
+\begin{lstlisting}[language=C]
 instr eventoSonoro
    i_DynamicIndex = p4
    i_debug=gi_debug
@@ -125,21 +127,23 @@ ifn_shape = (p9 == 0 ? 2 : p9)
 \end{lstlisting}
 
 I parametri vengono immediatamente validati e limitati per evitare valori che potrebbero causare problemi:
-- Le frequenze sono limitate tra 20 Hz e la frequenza di Nyquist
-- \texttt{iHR} (harmonic ratio) è forzato ad essere almeno 1
-- \texttt{ifn\_shape} ha un default alla tabella 2 se non specificato
-\subsection{Sistema di Compensazione Isofonica dell'Ampiezza}
+\begin{itemize}
+    \item Le frequenze sono limitate tra 20 Hz e la frequenza di Nyquist
+    \item \texttt{iHR} (harmonic ratio) è forzato ad essere almeno 1
+    \item \texttt{ifn\_shape} ha un default alla tabella 2 se non specificato
+\end{itemize}
+\subsubsection{Sistema di Compensazione Isofonica dell'Ampiezza}
 Una delle caratteristiche più sofisticate di Gamma è l'implementazione di un sistema di calibrazione dell'ampiezza basato sulle curve isofoniche ISO 226:2003. Questo garantisce che la percezione di loudness rimanga costante indipendentemente dalla frequenza.
 
 Il calcolo dell'ampiezza avviene attraverso una catena di UDO specializzati:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 kamp GetIsoAmp_k i_DynamicIndex, ifreq1, ifreq2
 \end{lstlisting}
 
 Questo UDO k-rate gestisce glissandi compensando dinamicamente l'ampiezza. Vediamo l'implementazione:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 opcode GetIsoAmp_k, k, iii
     iDynamicIndex, iFreqStart, iFreqEnd xin
 
@@ -162,7 +166,7 @@ endop
 
 Il cuore del sistema è l'UDO \texttt{GetIsoAmp}:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 opcode GetIsoAmp, i, ii
     iFrequency, iDynamicIndex xin
 
@@ -192,7 +196,7 @@ endop
 
 La conversione da Phon a SPL utilizza le curve ISO interpolate:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 opcode PhonToSpl_i, i, ii
     iphon, ifreq    xin
 
@@ -220,29 +224,31 @@ if abs(ifreq - 1000) < 0.1 then
 xout            ispl
 endop
 \end{lstlisting}
-\subsection{Sistema di Spazializzazione Mid-Side e Armoniche Spaziali}
-La spazializzazione in Gamma va oltre il semplice panning stereofonico, implementando un sistema basato su ''armoniche spaziali'' che deriva dalla teoria delle armoniche ritmiche. Il concetto chiave è che i valori ritmici non solo organizzano il tempo e selezionano le frequenze, ma definiscono anche il movimento nello spazio stereofonico.
+\subsubsection{Sistema di Spazializzazione Mid-Side e Armoniche Spaziali}
+La spazializzazione in Gamma va oltre il semplice panning stereofonico, implementando un sistema basato su \textit{armoniche spaziali} che deriva dalla teoria delle armoniche ritmiche. Il concetto chiave è che i valori ritmici non solo organizzano il tempo e selezionano le frequenze, ma definiscono anche il movimento nello spazio stereofonico.
 
 Vediamo come si sviluppa questo sistema partendo dai parametri di base:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 ; Parametri di base per la spazializzazione
-iwhichZero = abs(p6)    ; quale ''zero'' della funzione trigonometrica usare
-iHR = max(1, abs(p7))   ; Harmonic Ratio - il numero di ''spicchi'' della circonferenza
+iwhichZero = abs(p6)    ; quale "zero" della funzione trigonometrica usare
+iHR = max(1, abs(p7))   ; Harmonic Ratio - il numero di "spicchi" della circonferenza
 
 ; Calcolo del periodo e della posizione iniziale
 iPeriod = $M_PI * 2 / iHR
 iradi = (iwhichZero > 0 ? (iwhichZero - 1) * iPeriod : 0)
 \end{lstlisting}
 
-Il parametro \texttt{iHR} (Harmonic Ratio) determina in quanti ''spicchi'' viene suddivisa la circonferenza. Ad esempio:
-- \texttt{iHR = 1}: un solo periodo, movimento completo 0-360°
-- \texttt{iHR = 4}: quattro periodi, la circonferenza è divisa in quadranti
-- \texttt{iHR = 7}: sette spicchi, creando una suddivisione asimmetrica
+Il parametro \texttt{iHR} (Harmonic Ratio) determina in quanti \textit{spicchi} viene suddivisa la circonferenza. Ad esempio:
+\begin{itemize}
+    \item \texttt{iHR = 1}: un solo periodo, movimento completo 0-360°
+    \item \texttt{iHR = 4}: quattro periodi, la circonferenza è divisa in quadranti
+    \item \texttt{iHR = 7}: sette spicchi, creando una suddivisione asimmetrica
+\end{itemize}
 
 Il parametro \texttt{iwhichZero} determina da quale zero della funzione trigonometrica iniziare il movimento:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 ; Evoluzione temporale della posizione angolare
 kndx_local line 0, p3, 1
 ktab tab kndx_local, ifn_shape, 1
@@ -253,7 +259,7 @@ Qui \texttt{krad} evolve nel tempo secondo l'inviluppo specificato da \texttt{if
 
 La generazione dell'inviluppo locale usa una modifica della funzione seno quando \texttt{ifn\_shape == 2}:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 if ifn_shape == 2 then
     kEnv_local = abs(sin(krad * iHR / 2))
 else
@@ -262,9 +268,11 @@ endif
 \end{lstlisting}
 
 La formula \texttt{abs(sin(krad * iHR / 2))} genera curve polari modificate. Questa trasformazione:
-- Prende il valore assoluto, creando lobi sempre positivi
-- Moltiplica per \texttt{iHR / 2}, dimezzando il numero di lobi rispetto agli spicchi spaziali
-- Crea una correlazione diretta tra movimento spaziale e ampiezza
+\begin{itemize}
+    \item Prende il valore assoluto, creando lobi sempre positivi
+    \item Moltiplica per \texttt{iHR / 2}, dimezzando il numero di lobi rispetto agli spicchi spaziali
+    \item Crea una correlazione diretta tra movimento spaziale e ampiezza
+\end{itemize}
 
 Per comprendere meglio, consideriamo il codice Python fornito che visualizza queste funzioni:
 
@@ -280,7 +288,7 @@ Questo mostra come per \texttt{i} crescenti si ottengono curve polari con sempre
 
 La conversione finale da coordinate polari a stereo avviene con:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 ; Calcolo delle componenti Mid-Side
 kMid = cos(krad)
 kSide = sin(krad)
@@ -295,13 +303,15 @@ aR = (aMid - aSide) / $SQRT2
 \end{lstlisting}
 
 Questa matrice di rotazione:
-- Mantiene potenza costante durante il movimento
-- Crea un campo stereofonico coerente
-- Permette movimenti fluidi nello spazio
-\subsection{Gestione degli Inviluppi Multipli}
+\begin{itemize}
+    \item Mantiene potenza costante durante il movimento
+    \item Crea un campo stereofonico coerente
+    \item Permette movimenti fluidi nello spazio
+\end{itemize}
+\subsubsection{Gestione degli Inviluppi Multipli}
 Il sistema gestisce due livelli di inviluppo che interagiscono moltiplicativamente:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 ; Inviluppo locale dell'evento (derivato dalle armoniche spaziali)
 asigLocalEnv = asig * kEnv_local
 
@@ -320,10 +330,10 @@ asigEnv dcblock asigEnvPre
 \end{lstlisting}
 
 L'inviluppo di sezione permette modulazioni globali su tutti gli eventi di una sezione, mentre l'inviluppo locale (potenzialmente derivato dalle armoniche spaziali) definisce la forma del singolo evento.
-\section{1.3 Il Sistema di Intonazione Pitagorica}
+\subsection{Il Sistema di Intonazione Pitagorica}
 Il sistema di altezze in Gamma si basa su una implementazione personalizzata dell'intonazione pitagorica, gestita dall'opcode \texttt{GenPythagFreqs}:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 opcode GenPythagFreqs, i, iiii
   iFund, iNumIntervals, iNumOctaves, iTblNum xin
   iTotalLen = iNumIntervals * iNumOctaves
@@ -350,15 +360,17 @@ while iOctave < iNumOctaves do
       indx += 1
     od
 \end{lstlisting}
-\subsection{Costruzione della Tabella Frequenze}
+\subsubsection{Costruzione della Tabella Frequenze}
 Il sistema genera una tabella bidimensionale concettuale dove:
-- Ogni ottava contiene \texttt{iNumIntervals} frequenze (200 nel nostro caso)
-- Le frequenze sono generate attraverso iterazioni della quinta perfetta (3/2)
-- Ogni quinta che supera l'ottava viene riportata all'interno tramite divisione per 2
-\subsection{Ordinamento e Memorizzazione}
+\begin{itemize}
+    \item Ogni ottava contiene \texttt{iNumIntervals} frequenze (200 nel nostro caso)
+    \item Le frequenze sono generate attraverso iterazioni della quinta perfetta (3/2)
+    \item Ogni quinta che supera l'ottava viene riportata all'interno tramite divisione per 2
+\end{itemize}
+\subsubsection{Ordinamento e Memorizzazione}
 Dopo la generazione, le frequenze vengono ordinate all'interno di ogni ottava:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 ; Ordina le frequenze per questa ottava
 indx = iBaseIndex
 while (indx < (iBaseIndex + iNumIntervals - 1)) do
@@ -376,10 +388,10 @@ od
 \end{lstlisting}
 
 Questo bubble sort garantisce che le frequenze siano accessibili in ordine crescente all'interno di ogni ottava.
-\subsection{Mappatura Ottava-Registro-Ritmo}
+\subsubsection{Mappatura Ottava-Registro-Ritmo}
 L'accesso alle frequenze avviene attraverso la funzione \texttt{calcFrequenza}:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 opcode calcFrequenza, i, iii
     i_Ottava, i_Registro, i_RitmoCorrente xin
 
@@ -397,23 +409,27 @@ endop
 
 La formula di indicizzazione \texttt{i\_OffsetIntervallo + i\_RitmoCorrente} crea una relazione diretta tra il valore ritmico e l'altezza selezionata. Questo significa che:
 
-- Ritmi identici in registri diversi producono intervalli correlati
-- La sequenza ritmica diventa una sequenza melodica
-- Valori ritmici alti tendono verso frequenze più acute all'interno del registro
-\subsection{Implicazioni Compositive}
+\begin{itemize}
+    \item Ritmi identici in registri diversi producono intervalli correlati
+    \item La sequenza ritmica diventa una sequenza melodica
+    \item Valori ritmici alti tendono verso frequenze più acute all'interno del registro
+\end{itemize}
+\subsubsection{Implicazioni Compositive}
 Questa architettura crea una profonda interconnessione tra dimensione temporale, frequenziale e spaziale. Un pattern ritmico [3, 5, 8, 13] non solo definisce:
-- Le durate relative degli eventi (durataArmonica/3, durataArmonica/5, etc.)
-- Le altezze selezionate dalla tabella pitagorica
-- Il numero di suddivisioni spaziali e il pattern di movimento stereofonico
-- La forma dell'inviluppo di ampiezza quando si usano le armoniche spaziali
+\begin{itemize}
+    \item Le durate relative degli eventi (durataArmonica/3, durataArmonica/5, etc.)
+    \item Le altezze selezionate dalla tabella pitagorica
+    \item Il numero di suddivisioni spaziali e il pattern di movimento stereofonico
+    \item La forma dell'inviluppo di ampiezza quando si usano le armoniche spaziali
+\end{itemize}
 
 L'uso dell'intonazione pitagorica invece del temperamento equabile aggiunge ulteriore ricchezza armonica: le quinte sono pure (rapporto 3:2), ma questo genera comma pitagorici e intervalli microtonali che colorano il risultato sonoro con battimenti e risonanze particolari.
 
 L'orchestra Gamma dimostra come un'architettura ben progettata possa creare connessioni profonde tra parametri apparentemente indipendenti, trasformando relazioni numeriche astratte in strutture musicali percettivamente significative. La gerarchia Voce → eventoSonoro, supportata dal sistema di intonazione pitagorica, dalle sofisticate tecniche di compensazione isofonica e dal sistema di armoniche spaziali, fornisce al compositore uno strumento di straordinaria flessibilità espressiva, capace di generare tessiture sonore complesse da specifiche relativamente semplici.
-\section{1.4 NonlinearFunc: Il Generatore di Ritmi Caotici}
+\subsection{NonlinearFunc: Il Generatore di Ritmi Caotici}
 L'opcode \texttt{NonlinearFunc} rappresenta uno degli elementi più innovativi di Gamma, fornendo un sistema sofisticato per la generazione di sequenze ritmiche che evolvono nel tempo secondo principi deterministici, periodici o caotici. Questo UDO (User Defined Opcode) estende le possibilità compositive oltre i pattern ritmici predefiniti, permettendo l'esplorazione di territori ritmici emergenti.
-\subsection{Struttura e Parametri dell'Opcode}
-\begin{lstlisting}[language=Csound]
+\subsubsection{Struttura e Parametri dell'Opcode}
+\begin{lstlisting}[language=C]
 opcode NonlinearFunc, i, ippo
   iX, iMode, iMinVal, iMaxVal xin
 
@@ -429,14 +445,16 @@ iPI = 4 * taninv(1.0)
 \end{lstlisting}
 
 L'opcode accetta quattro parametri:
-- **iX**: Il valore di input, tipicamente il ritmo precedente nella sequenza
-- **iMode**: Selettore della modalità operativa (0-3)
-- **iMinVal**: Valore minimo del range di output (default: 1)
-- **iMaxVal**: Valore massimo del range di output (default: 35)
+\begin{itemize}
+    \item \texttt{iX}: Il valore di input, tipicamente il ritmo precedente nella sequenza
+    \item \texttt{iMode}: Selettore della modalità operativa (0-3)
+    \item \texttt{iMinVal}: Valore minimo del range di output (default: 1)
+    \item \texttt{iMaxVal}: Valore massimo del range di output (default: 35)
+\end{itemize}
 
 La prima operazione importante è la normalizzazione e limitazione dei valori di input per garantire stabilità numerica. Il valore di iX viene limitato tra 1 e 100 per evitare overflow o comportamenti indefiniti nelle funzioni matematiche successive.
-\subsection{Modalità 0: Convergente}
-\begin{lstlisting}[language=Csound]
+\subsubsection{Modalità 0: Convergente}
+\begin{lstlisting}[language=C]
 if iMode == 0 then
     ; --- MODALITÀ 0: CONVERGENTE ---
     iR = 2.8
@@ -445,10 +463,12 @@ if iMode == 0 then
 
 Questa modalità implementa una variante della mappa logistica con comportamento convergente. Il parametro \texttt{iR = 2.8} è scelto specificamente per rimanere nella regione stabile del diagramma di biforcazione della mappa logistica, dove il sistema converge verso un punto fisso.
 
-La formula \texttt{iR * iX * (1 - iX/40)} differisce dalla classica mappa logistica \texttt{r * x * (1 - x)} per il fattore di scala 40. Questo adattamento:
-- Permette di lavorare con valori di input nell'intervallo 1-100 invece di 0-1
-- Rallenta la convergenza, rendendo l'evoluzione ritmica più graduale
-- Crea una traiettoria prevedibile verso un valore stabile
+La formula \texttt{iR * iX * (1 {-} iX/40)} differisce dalla classica mappa logistica \texttt{r * x * (1 {-} x)} per il fattore di scala 40. Questo adattamento:
+\begin{itemize}
+    \item Permette di lavorare con valori di input nell'intervallo 1-100 invece di 0-1
+    \item Rallenta la convergenza, rendendo l'evoluzione ritmica più graduale
+    \item Crea una traiettoria prevedibile verso un valore stabile
+\end{itemize}
 
 Matematicamente, per \texttt{iR = 2.8}, il sistema convergerà verso il punto fisso:
 \begin{lstlisting}
@@ -456,8 +476,8 @@ x* = 40 * (1 - 1/iR) ≈ 25.71
 \end{lstlisting}
 
 Questo significa che sequenze ritmiche in modalità convergente tenderanno gradualmente verso valori intorno a 26, creando un effetto di stabilizzazione ritmica.
-\subsection{Modalità 1: Periodica}
-\begin{lstlisting}[language=Csound]
+\subsubsection{Modalità 1: Periodica}
+\begin{lstlisting}[language=C]
 elseif iMode == 1 then
     ; --- MODALITÀ 1: PERIODICA ---
     iP1 = sin(iX * iPI/18)
@@ -468,23 +488,29 @@ elseif iMode == 1 then
 La modalità periodica utilizza l'interferenza di due funzioni trigonometriche con periodi incommensurabili per generare pattern complessi ma deterministici.
 
 L'analisi matematica rivela:
-- \texttt{sin(iX * π/18)}: periodo di 36 unità
-- \texttt{cos(iX * π/10)}: periodo di 20 unità
-- Il minimo comune multiplo è 180, creando un super-periodo
+\begin{itemize}
+    \item \texttt{sin(iX * \}\}\}\$\textbackslash\{\}pi\$\textbackslash\{\}texttt\{\{/18)}: periodo di 36 unità
+    \item \texttt{cos(iX * \}\}\}\$\textbackslash\{\}pi\$\textbackslash\{\}texttt\{\{/10)}: periodo di 20 unità
+    \item Il minimo comune multiplo è 180, creando un super-periodo
+\end{itemize}
 
 Il prodotto \texttt{iP1 * iP2} genera un'interferenza costruttiva e distruttiva tra le due onde:
-- Quando entrambe le funzioni sono vicine ai loro massimi/minimi, il prodotto è grande
-- Quando una è vicina a zero, il prodotto si annulla
-- Il valore assoluto garantisce output positivi
+\begin{itemize}
+    \item Quando entrambe le funzioni sono vicine ai loro massimi/minimi, il prodotto è grande
+    \item Quando una è vicina a zero, il prodotto si annulla
+    \item Il valore assoluto garantisce output positivi
+\end{itemize}
 
 La trasformazione finale \texttt{abs(iP1 * iP2) * 20 + 10}:
-- Scala il range da [0, 1] a [0, 20]
-- Aggiunge un offset di 10, risultando in valori tra 10 e 30
-- Garantisce che i ritmi generati rimangano in un range musicalmente utile
+\begin{itemize}
+    \item Scala il range da [0, 1] a [0, 20]
+    \item Aggiunge un offset di 10, risultando in valori tra 10 e 30
+    \item Garantisce che i ritmi generati rimangano in un range musicalmente utile
+\end{itemize}
 
 Questa modalità produce sequenze che si ripetono dopo 180 iterazioni ma con una struttura interna ricca di variazioni locali.
-\subsection{Modalità 2: Caotica Deterministica}
-\begin{lstlisting}[language=Csound]
+\subsubsection{Modalità 2: Caotica Deterministica}
+\begin{lstlisting}[language=C]
 elseif iMode == 2 then
     ; --- MODALITÀ 2: CAOTICA DETERMINISTICA ---
     iR = 3.99
@@ -500,21 +526,27 @@ elseif iMode == 2 then
 Questa modalità implementa la mappa logistica nella sua regione caotica con l'aggiunta di una piccola perturbazione stocastica.
 
 Il parametro \texttt{iR = 3.99} posiziona il sistema al limite del caos:
-- Per r > 3.57, la mappa logistica entra nel regime caotico
-- A r = 3.99, siamo nella regione di caos sviluppato
-- Piccole variazioni nell'input producono grandi divergenze nell'output
+\begin{itemize}
+    \item Per r > 3.57, la mappa logistica entra nel regime caotico
+    \item A r = 3.99, siamo nella regione di caos sviluppato
+    \item Piccole variazioni nell'input producono grandi divergenze nell'output
+\end{itemize}
 
 Il processo di normalizzazione \texttt{(iX \% 100) / 100}:
-- Utilizza l'operatore modulo per mantenere i valori ciclici
-- Normalizza nell'intervallo [0, 1] richiesto dalla mappa logistica
-- Il limite \texttt{[0.01, 0.99]} evita i punti fissi instabili a 0 e 1
+\begin{itemize}
+    \item Utilizza l'operatore modulo per mantenere i valori ciclici
+    \item Normalizza nell'intervallo [0, 1] richiesto dalla mappa logistica
+    \item Il limite \texttt{[0.01, 0.99]} evita i punti fissi instabili a 0 e 1
+\end{itemize}
 
-L'aggiunta di rumore \texttt{random:i(-0.05, 0.05)}:
-- Introduce una componente stocastica del 5%
-- Previene cicli perfetti che potrebbero emergere anche nel caos deterministico
-- Simula le imperfezioni del mondo reale
-\subsection{Modalità 3: Caos Vero (Default)}
-\begin{lstlisting}[language=Csound]
+L'aggiunta di rumore \texttt{random:i({-}0.05, 0.05)}:
+\begin{itemize}
+    \item Introduce una componente stocastica del 5\%
+    \item Previene cicli perfetti che potrebbero emergere anche nel caos deterministico
+    \item Simula le imperfezioni del mondo reale
+\end{itemize}
+\subsubsection{Modalità 3: Caos Vero (Default)}
+\begin{lstlisting}[language=C]
 else
     ; --- MODALITÀ 3: CAOS VERO (DEFAULT) ---
     ; 1. Componente deterministica (60%)
@@ -527,21 +559,25 @@ else
     iDeterministic = (iNonlinear1 + iNonlinear2 + iNonlinear3) / 3
 \end{lstlisting}
 
-La modalità ''Caos Vero'' rappresenta l'approccio più sofisticato, combinando molteplici generatori non lineari con componenti stocastiche.
+La modalità \textit{Caos Vero} rappresenta l'approccio più sofisticato, combinando molteplici generatori non lineari con componenti stocastiche.
 
 La generazione dei seed utilizza moltiplicatori irrazionali approssimati:
-- 1.3 ≈ √1.69 
-- 0.7 ≈ 1/√2
-- 2.5 ≈ √6.25
+\begin{itemize}
+    \item 1.3 $\approx$ √1.69 
+    \item 0.7 $\approx$ 1/√2
+    \item 2.5 $\approx$ √6.25
+\end{itemize}
 
 Questi valori garantiscono che i tre seed evolvano a velocità diverse e incommensurabili, massimizzando la complessità dell'output.
 
 Le tre funzioni non lineari utilizzano:
-- **sin** con accoppiamento additivo: sensibile alle fasi relative
-- **cos** con accoppiamento additivo: sfasato di π/2 rispetto a sin
-- **tan** con modulo: introduce discontinuità controllate
+\begin{itemize}
+    \item \texttt{sin} con accoppiamento additivo: sensibile alle fasi relative
+    \item \texttt{cos} con accoppiamento additivo: sfasato di $\pi$/2 rispetto a sin
+    \item \texttt{tan} con modulo: introduce discontinuità controllate
+\end{itemize}
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
     ; 2. Componente casuale (40%)
     iRandom = random:i(0, 1)
 
@@ -551,11 +587,13 @@ Le tre funzioni non lineari utilizzano:
 \end{lstlisting}
 
 Il bilanciamento 60/40 tra deterministico e stocastico è calibrato per:
-- Mantenere una struttura riconoscibile (componente deterministica)
-- Introdurre sufficiente imprevedibilità (componente random)
-- Evitare sia la monotonia che il rumore bianco
+\begin{itemize}
+    \item Mantenere una struttura riconoscibile (componente deterministica)
+    \item Introdurre sufficiente imprevedibilità (componente random)
+    \item Evitare sia la monotonia che il rumore bianco
+\end{itemize}
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
     ; 4. Perturbazione periodica
     iPerturbation = 0
     if (iX % 7 == 0) then 
@@ -568,13 +606,15 @@ Il bilanciamento 60/40 tra deterministico e stocastico è calibrato per:
 \end{lstlisting}
 
 La perturbazione periodica ogni 7 iterazioni:
-- Introduce eventi rari ma significativi
-- Il numero 7 (primo) evita risonanze con altri periodi nel sistema
-- L'ampiezza ±30% può causare salti drammatici nel ritmo
-\subsection{Integrazione con il Sistema Gamma}
+\begin{itemize}
+    \item Introduce eventi rari ma significativi
+    \item Il numero 7 (primo) evita risonanze con altri periodi nel sistema
+    \item L'ampiezza ±30\% può causare salti drammatici nel ritmo
+\end{itemize}
+\subsubsection{Integrazione con il Sistema Gamma}
 Nel contesto dello strumento Voce, NonlinearFunc viene chiamato quando la tabella dei ritmi predefiniti si esaurisce:
 
-\begin{lstlisting}[language=Csound]
+\begin{lstlisting}[language=C]
 i_RitmoCorrente NonlinearFunc i_Vecchio_Ritmo, i_NonlinearMode
 \end{lstlisting}
 
@@ -583,18 +623,21 @@ Questo crea una transizione fluida da:
     \item \textbf{Fase deterministica}: Ritmi composti e memorizzati in tabella
     \item \textbf{Fase generativa}: Ritmi creati algoritmicamente
 \end{enumerate}
-
 L'output di NonlinearFunc influenza direttamente:
-- **Temporalità**: Attraverso la formula \texttt{i\_DurataArmonica / i\_RitmoCorrente}
-- **Altezza**: Il ritmo viene usato come indice nella tabella delle frequenze
-- **Spazializzazione**: Determina il parametro iHR per le armoniche spaziali
-\subsection{Implicazioni Compositive e Estetiche}
+\begin{itemize}
+    \item \textbf{Temporalità}: Attraverso la formula \texttt{i\_DurataArmonica / i\_RitmoCorrente}
+    \item \textbf{Altezza}: Il ritmo viene usato come indice nella tabella delle frequenze
+    \item \textbf{Spazializzazione}: Determina il parametro iHR per le armoniche spaziali
+\end{itemize}
+\subsubsection{Implicazioni Compositive e Estetiche}
 L'uso di NonlinearFunc permette di esplorare diverse estetiche ritmiche:
 
-- **Modalità 0 (Convergente)**: Crea un senso di ''arrivo'' o ''risoluzione'' ritmica, utile per conclusioni o punti di stasi
-- **Modalità 1 (Periodica)**: Genera groove complessi ma ripetitivi, ideale per sezioni di sviluppo
-- **Modalità 2 (Caotica Deterministica)**: Produce variazioni continue senza ripetizioni, perfetta per tessiture in evoluzione
-- **Modalità 3 (Caos Vero)**: Bilancia imprevedibilità e coerenza, creando interesse sostenuto
+\begin{itemize}
+    \item \textbf{Modalità 0 (Convergente)}: Crea un senso di \textit{arrivo} o \textit{risoluzione} ritmica, utile per conclusioni o punti di stasi
+    \item \textbf{Modalità 1 (Periodica)}: Genera groove complessi ma ripetitivi, ideale per sezioni di sviluppo
+    \item \textbf{Modalità 2 (Caotica Deterministica)}: Produce variazioni continue senza ripetizioni, perfetta per tessiture in evoluzione
+    \item \textbf{Modalità 3 (Caos Vero)}: Bilancia imprevedibilità e coerenza, creando interesse sostenuto
+\end{itemize}
 
 La possibilità di cambiare modalità durante la composizione (attraverso il parametro YAML \texttt{nonlinear\_mode}) permette di modulare il grado di prevedibilità/caos nel flusso ritmico, creando archi formali che vanno dall'ordine al disordine e viceversa.
 
