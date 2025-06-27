@@ -896,37 +896,6 @@ def convert_bold_text(text: str) -> str:
     logging.info("    - Convertito testo grassetto") # Aggiorna il messaggio di log
     return text
 
-def escape_underscores_in_text(text: str) -> str:
-    """Fa l'escape degli underscore (_) nel testo normale, proteggendo i blocchi di codice Markdown."""
-    code_blocks = []
-    inline_code_blocks = []
-
-    # Salva e sostituisci blocchi di codice multilinea ```...```
-    def save_code_block(match):
-        code_blocks.append(match.group(0))
-        return f"__CODE_BLOCK_{len(code_blocks)-1}__"
-
-    # Salva e sostituisci codice inline `...`
-    def save_inline_code(match):
-        inline_code_blocks.append(match.group(0))
-        return f"__INLINE_CODE_{len(inline_code_blocks)-1}__"
-
-    # Proteggi i blocchi di codice Markdown prima di fare qualsiasi altra cosa
-    processed_text = re.sub(r"```.*?```", save_code_block, text, flags=re.DOTALL)
-    processed_text = re.sub(r"(?<!`)`([^`\n]+?)`(?!`)", save_inline_code, processed_text)
-
-    # Ora, nel testo rimanente, sostituisci in sicurezza '_' con '\_'
-    processed_text = processed_text.replace('_', r'\_')
-
-    # Ripristina i blocchi di codice
-    for i, code_block in enumerate(code_blocks):
-        processed_text = processed_text.replace(f"__CODE_BLOCK_{i}__", code_block)
-    for i, inline_code in enumerate(inline_code_blocks):
-        processed_text = processed_text.replace(f"__INLINE_CODE_{i}__", inline_code)
-    
-    logging.info("    - Escapati underscore nel testo normale (proteggendo codice MD)")
-    return processed_text
-
 def process_markdown_content(md_content: str, md_filename_for_this_content: str, section_index: int, is_first_section: bool) -> str:
     logging.info(f"Processando contenuto per la sezione {section_index} ({md_filename_for_this_content})...")
     
@@ -935,7 +904,6 @@ def process_markdown_content(md_content: str, md_filename_for_this_content: str,
     # Fase 1: Rimozione citazioni trascrizione (prima di tutto)
     latex_content = remove_transcription_citations(latex_content)
 
-    #latex_content = escape_underscores_in_text(latex_content)
     latex_content = convert_bold_text(latex_content)          # **testo** → \textbf{testo} (con _ escaped)
     
     # Fase 2: Conversioni di caratteri speciali nel testo normale
@@ -954,8 +922,6 @@ def process_markdown_content(md_content: str, md_filename_for_this_content: str,
     latex_content = convert_numbered_lists(latex_content)
     latex_content = convert_bulleted_lists(latex_content)
 
-
-    #latex_content = escape_hyphens_in_text(latex_content)     # - → {-} (nel testo normale)
     # Fase 5: Altri comandi
     latex_content = apply_persona_command(latex_content)
     
