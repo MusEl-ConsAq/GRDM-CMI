@@ -1,265 +1,103 @@
 % --- Contenuto LaTeX autogenerato da capitolo4.md (sezione 5) ---
 
-\section{GENERAZIONE PARAMETRICA E MASCHERE DI TENDENZA}
-La generazione parametrica costituisce il processo centrale attraverso cui le specifiche compositive astratte si trasformano in valori concreti per la sintesi. Questo capitolo analizza i meccanismi che permettono questa trasformazione, con particolare attenzione al concetto di maschera di tendenza e alle tecniche di interpolazione che permettono l'evoluzione temporale dei parametri.
-\subsection{Il Metodo \texttt{\_generate\_params\_from\_mask()}}
-Il metodo \texttt{\_generate\_params\_from\_mask()} rappresenta il punto di convergenza tra l'astrazione compositiva e la concretezza numerica. Con oltre 200 righe di codice, questo metodo implementa la logica che trasforma le maschere di tendenza definite in YAML in parametri specifici per ogni evento sonoro.
-\subsubsection{Architettura del Processo Generativo}
-Il metodo inizia definendo un insieme di chiavi che richiedono gestione specializzata:
+\section{Dall'Intenzione alla Nota: Maschere di Tendenza e Generazione Parametrica}
+La generazione parametrica è il motore alchemico di Gamma, il processo centrale attraverso cui le intenzioni del compositore, espresse come  maschere di tendenza  nel file YAML, vengono trasformate in valori numerici concreti per ogni singolo evento sonoro. Se l'orchestra Csound è il corpo esecutore, i metodi analizzati in questo capitolo rappresentano il cervello decisionale che lo pilota. Analizzeremo come il sistema traduce l'astrazione in suono, con particolare attenzione alle tecniche di generazione, interpolazione e gestione della coerenza strutturale.
+\subsection{Il Motore Generativo: \texttt{\_generate\_params\_from\_mask()}}
+Il metodo \texttt{\_generate\_params\_from\_mask()} è il punto di convergenza tra l'astrazione compositiva e la concretezza numerica. Implementa la logica che trasforma una singola maschera di tendenza nei parametri specifici per un evento sonoro, gestendo una varietà di strategie generative per rispondere a diverse necessità espressive.
+\subsubsection{Architettura e Gestione Specializzata}
+Il processo non è monolitico. Il metodo prima isola un insieme di chiavi che richiedono una gestione specializzata, poiché non rappresentano parametri diretti o necessitano di logiche di trasformazione complesse.
 
 \begin{lstlisting}[language=Python]
 SKIPPED_KEYS = {
-    'choices', 'weights', 'distribution',  # Metadati
-    'dynamic_index', 'dinamica', 'nonlinear_mode',  # Gestiti separatamente
-    'senso_movimento', 'inviluppo_attacco', 'tipo_ritmi', 'densita_cluster'
+    'choices', 'weights', 'distribution',  # Metadati per la generazione
+    'dynamic_index', 'dinamica',           # Logica di dinamica complessa
+    'nonlinear_mode', 'senso_movimento',   # Parametri di controllo per Csound
+    'inviluppo_attacco', 'tipo_ritmi',      # Richiedono traduzione o generazione complessa
+    'densita_cluster'                      
 }
 \end{lstlisting}
-
-Questa distinzione è necessaria perché alcuni parametri non possono essere gestiti dal loop generico di generazione. Le chiavi di metadati come \texttt{choices} e \texttt{weights} non sono parametri in sé, ma descrivono come generare altri parametri. Altri, come \texttt{dinamica} e \texttt{tipo\_ritmi}, richiedono logiche di trasformazione complesse che vanno oltre la semplice generazione numerica.
-\subsubsection{Le Quattro Modalità di Generazione}
-Il cuore del metodo è un loop che itera su ogni parametro della maschera, applicando la modalità di generazione appropriata:
+Questa separazione permette a un loop generico di gestire i parametri puramente numerici, mentre logiche dedicate si occupano di tradurre concetti come \texttt{'dinamica': 'f'} nell'indice numerico richiesto da Csound o di generare intere sequenze ritmiche da una categoria come \texttt{'medi'}.
+\subsubsection{Le Modalità di Generazione: Un Toolkit Espressivo}
+Il cuore del metodo itera sui parametri, applicando la modalità di generazione più appropriata in base alla struttura della maschera.
 
 \begin{lstlisting}[language=Python]
 for key, p_mask in mask.items():
     if key in SKIPPED_KEYS: continue
-\section{Percorso 1: Distribuzione normale}
+\section{1. Distribuzione Normale (Gaussiana)}
     if 'mean' in p_mask and 'std' in p_mask:
         val = np.random.normal(loc=p_mask['mean'], scale=p_mask['std'])
-\section{Percorso 2: Range uniforme}
+\section{2. Distribuzione Uniforme (Range)}
     elif 'range' in p_mask:
         min_val, max_val = p_mask['range']
-        if isinstance(min_val, int) and isinstance(max_val, int):
-            val = random.randint(min_val, max_val)
-        else:
-            val = random.uniform(min_val, max_val)
-\section{Percorso 3: Scelta pesata}
+        val = random.randint(min_val, max_val) if isinstance(min_val, int) else random.uniform(min_val, max_val)
+\section{3. Scelta Discreta Pesata}
     elif 'choices' in p_mask:
         val = random.choices(p_mask['choices'], weights=p_mask.get('weights'), k=1)[0]
-\section{Percorso 4: Valore fisso (implementato implicitamente)}
+\section{4. Valore Fisso}
     elif 'value' in p_mask:
         val = p_mask['value']
 \end{lstlisting}
 
-Ogni modalità risponde a esigenze compositive diverse:
+Questo toolkit di quattro modalità offre al compositore un controllo granulare sul grado di determinismo e casualità:
 
-\textbf{Distribuzione Normale}: Utilizzata quando si desidera concentrazione attorno a un valore centrale con occasionali deviazioni. Un'ottava con \texttt{mean: 5, std: 0.5} produrrà principalmente note nell'ottava 5, con occasionali escursioni nelle ottave 4 e 6. La deviazione standard controlla quanto \textit{avventurosi} possono essere questi scostamenti.
-
-\textbf{Range Uniforme}: Appropriata quando tutti i valori in un intervallo sono ugualmente desiderabili. La distinzione tra interi e float non è solo tecnica - un registro definito come \texttt{range: [1, 10]} (interi) produrrà salti discreti, mentre \texttt{range: [1.0, 10.0]} permetterà microtonalità.
-
-\textbf{Scelta Pesata}: Permette distribuzioni non uniformi discrete. Una dinamica definita come \texttt{choices: ['p', 'mf', 'f'], weights: [0.5, 0.3, 0.2]} produrrà piano la metà delle volte, mezzoforte il 30\% e forte il 20\%. Questo controllo statistico permette di definire il \textit{colore dinamico} generale mantenendo varietà.
-\subsubsection{Gestione di Parametri Speciali}
-Alcuni parametri richiedono logiche di generazione che vanno oltre i quattro percorsi standard. La dinamica, per esempio, richiede una gestione particolare per supportare sia layer statici che dinamici:
-
-\begin{lstlisting}[language=Python]
-\section{Priorità 1: L'indice è già stato calcolato dalla funzione di interpolazione}
-if 'dynamic_index' in mask:
-    params['dynamic_index'] = mask['dynamic_index']
-else:
-\section{Priorità 2: Generazione dalla maschera 'dinamica'}
-    dynamic_mask = mask.get('dinamica')
-    if dynamic_mask:
-        if 'choices' in dynamic_mask:
-            dynamic_str = random.choices(
-                dynamic_mask['choices'], 
-                weights=dynamic_mask.get('weights'), 
-                k=1
-            )[0]
-            params['dynamic_index'] = self.dynamic_to_index.get(dynamic_str, 3)
-        elif 'value' in dynamic_mask:
-            dynamic_str = dynamic_mask['value']
-            params['dynamic_index'] = self.dynamic_to_index.get(dynamic_str, 3)
-        else:
-            params['dynamic_index'] = 3  # Default 'mf'
-    else:
-        params['dynamic_index'] = 3  # Default 'mf'
-\end{lstlisting}
-
-Questa logica a cascata gestisce tre casi: layer dinamici dove l'indice è pre-calcolato dall'interpolazione, layer statici con dinamica specificata, e il caso default. La complessità riflette la necessità di supportare diversi workflow compositivi senza sacrificare la coerenza del sistema.
-\subsubsection{Sistema di Generazione dei Ritmi}
-La generazione dei ritmi dimostra come il sistema supporti molteplici livelli di astrazione:
+\begin{enumerate}
+    \item Distribuzione Normale : Ideale per creare una \textit{massa} sonora attorno a un centro tonale o timbrico. Un'ottava definita come \texttt{\{mean: 5, std: 0.5\}} tenderà a rimanere nell'ottava 5, ma con occasionali e naturali \textit{fughe} verso le ottave vicine. La deviazione standard diventa un parametro espressivo che controlla la \textit{disciplina} del materiale.
+    \item Range Uniforme : Utile quando tutti i valori in un intervallo sono ugualmente desiderabili. Un \texttt{range: [1, 10]} per il registro crea salti discreti, mentre un \texttt{range: [1.0, 10.0]} abilita micro-intervalli, mostrando come una scelta tecnica influenzi direttamente il risultato sonoro.
+    \item Scelta Pesata : Permette di definire il \textit{colore} statistico di una sezione. Una dinamica specificata come \texttt{\{choices: ['p', 'mf', 'f'], weights: [0.6, 0.3, 0.1]\}} assicura una predominanza di eventi piano, pur mantenendo la varietà.
+    \item Valore Fisso : Garantisce il determinismo assoluto, essenziale per parametri strutturali come il senso di movimento spaziale.
+\end{enumerate}
+\subsubsection{La Logica Gerarchica dei Ritmi}
+La generazione dei ritmi è un esempio emblematico di come il sistema supporti molteplici livelli di astrazione, dal controllo totale alla delega generativa.
 
 \begin{lstlisting}[language=Python]
-rhythm_mask = mask.get('tipo_ritmi', {'choices': ['medi']})
-
 if 'explicit_values' in rhythm_mask:
-\section{Modalità 1: Lista esplicita}
+\section{Modalità 1: Controllo totale con una lista esplicita}
     params['ritmi'] = rhythm_mask['explicit_values']
-
 elif 'choices' in rhythm_mask:
-    choice = random.choices(rhythm_mask['choices'], 
-                          weights=rhythm_mask.get('weights'), k=1)[0]
-
-if isinstance(choice, list):
-\section{Modalità 2a: Scelta tra liste predefinite}
+    choice = random.choices(rhythm_mask['choices'], ...)[0]
+    if isinstance(choice, list):
+\section{Modalità 2: Scelta tra pattern pre-composti}
         params['ritmi'] = choice
     else:
-\section{Modalità 2b: Scelta tra categorie}
+\section{Modalità 3: Astrazione massima tramite categorie ('piccoli', 'medi'...)}
         params['ritmi'] = self._generate_rhythm_pattern(choice)
 \end{lstlisting}
-
-Tre modalità permettono diversi gradi di controllo:
-\begin{enumerate}
-    \item \textbf{Valori Espliciti}: \texttt{[3, 5, 8, 13]} - controllo totale
-    \item \textbf{Liste Predefinite}: Scelta tra pattern completi
-    \item \textbf{Categorie}: 'piccoli', 'medi', 'grandi' - astrazione massima
-\end{enumerate}
-\subsubsection{Validazione e Retry}
-La generazione include un meccanismo di retry per garantire parametri validi:
+Questa architettura permette al compositore di scegliere il livello di dettaglio più consono: specificare un pattern esatto, scegliere da una libreria di pattern, o semplicemente indicare una \textit{qualità} ritmica desiderata.
+\subsection{3.2 L'Evoluzione nel Tempo: Interpolazione delle Maschere}
+Se la generazione da una singola maschera crea eventi statici, l'interpolazione tra due maschere (\texttt{stato\_iniziale} e \texttt{stato\_finale}) dà vita a processi dinamici e trasformativi. Il metodo \texttt{\_interpolate\_mask()} implementa questa logica con una particolare attenzione alla robustezza e alla coerenza musicale.
+\subsubsection{Gestione delle Transizioni Asimmetriche}
+Un problema chiave nell'interpolazione è come gestire parametri che compaiono solo nello stato finale. Gamma adotta una strategia di \textit{riempimento} che ne aumenta la flessibilità.
 
 \begin{lstlisting}[language=Python]
-for attempt in range(10):
-    params = self._generate_params_from_mask(event_mask)
-    if self._valida_parametri(params):
-        break
-else:
-    print(f"ATTENZIONE: Impossibile generare parametri validi")
-\end{lstlisting}
-
-Dieci tentativi bilanciano la probabilità di successo con la necessità di evitare loop infiniti. La validazione verifica vincoli come la durata minima degli eventi e la coerenza delle frequenze.
-\subsection{Interpolazione per Layer Dinamici}
-L'interpolazione delle maschere permette l'evoluzione graduale dei parametri nel tempo, trasformando specifiche statiche in processi dinamici. Il metodo \texttt{\_interpolate\_mask()} implementa questa trasformazione con attenzione particolare alla gestione di casi limite e parametri eterogenei.
-\subsubsection{Gestione delle Maschere Asimmetriche}
-Un problema comune nei sistemi di interpolazione è la gestione di parametri presenti solo in uno dei due stati. Gamma risolve questo con una strategia di \textit{riempimento}:
-
-\begin{lstlisting}[language=Python]
-def _interpolate_mask(self, start_mask, end_mask, progress):
-    interp_mask = {}
-    all_keys = set(start_mask.keys()) | set(end_mask.keys())
-
+all_keys = set(start_mask.keys()) | set(end_mask.keys())
 for key in all_keys:
-        s_mask = start_mask.get(key)
-        e_mask = end_mask.get(key)
-\section{Gestione parametri asimmetrici}
-        if s_mask is None:
-            s_mask = e_mask
-        if e_mask is None:
-            e_mask = s_mask
+    s_mask = start_mask.get(key)
+    e_mask = end_mask.get(key)
+
+if s_mask is None: s_mask = e_mask
+    if e_mask is None: e_mask = s_mask
 \end{lstlisting}
+Se un parametro è definito solo alla fine, il sistema assume che fosse presente fin dall'inizio con lo stesso valore finale. Questo permette di \textit{introdurre} un nuovo processo (es. un glissando) senza doverne specificare un valore nullo all'inizio, semplificando la scrittura delle partiture YAML.
+\subsubsection{Strategie di Interpolazione Differenziate}
+L'interpolazione si adatta al tipo di parametro, producendo transizioni musicalmente significative:
 
-Se un parametro esiste solo nello stato finale, viene utilizzato per l'intera durata. Questo permette di introdurre gradualmente nuovi parametri senza dover ridefinire l'intero stato iniziale.
-\subsubsection{Strategie di Interpolazione per Tipo}
-Diversi tipi di parametri richiedono strategie di interpolazione diverse:
-
-\textbf{Parametri Numerici (Range)}:
-\begin{lstlisting}[language=Python]
-if 'range' in s_mask:
-    s_min, s_max = s_mask['range']
-    e_min, e_max = e_mask.get('range', s_mask['range'])
-    i_min = s_min + (e_min - s_min) * shaped_progress
-    i_max = s_max + (e_max - s_max) * shaped_progress
-    interp_mask[key]['range'] = [i_min, i_max]
-\end{lstlisting}
-
-L'interpolazione lineare dei limiti del range permette transizioni fluide. Un'ottava che evolve da \texttt{range: [3, 4]} a \texttt{range: [6, 8]} vedrà sia il centro che l'ampiezza del range cambiare gradualmente.
-
-\textbf{Distribuzioni Normali}:
-\begin{lstlisting}[language=Python]
-elif 'mean' in s_mask:
-    i_mean = s_mask['mean'] + (e_mean - s_mask['mean']) * shaped_progress
-    i_std = s_mask['std'] + (e_std - s_mask['std']) * shaped_progress
-    interp_mask[key]['mean'] = i_mean
-    interp_mask[key]['std'] = i_std
-\end{lstlisting}
-
-Interpolando sia media che deviazione standard, il sistema può creare effetti come un focus progressivo (std decrescente) o una dispersione graduale (std crescente).
-
-\textbf{Scelte Discrete (Choices)}:
-\begin{lstlisting}[language=Python]
-elif 'choices' in s_mask:
-    s_choices = s_mask['choices']
-    e_choices = e_mask.get('choices', s_choices)
-    s_weights = np.array(s_mask.get('weights', [1]*len(s_choices)))
-    e_weights = np.array(e_mask.get('weights', [1]*len(e_choices)))
-
-if s_choices == e_choices and len(s_weights) == len(e_weights):
-        i_weights = s_weights * (1 - shaped_progress) + e_weights * shaped_progress
-        interp_mask[key] = {'choices': s_choices, 'weights': i_weights.tolist()}
-    else:
-        interp_mask[key] = s_mask if shaped_progress < 0.5 else e_mask
-\end{lstlisting}
-
-Quando le liste di scelte sono identiche, i pesi vengono interpolati creando un cross-fade probabilistico. Altrimenti, si usa una transizione a scalino al punto medio.
-\subsubsection{Shaping delle Curve di Interpolazione}
-Il sistema supporta curve di interpolazione non lineari attraverso il parametro \texttt{interp\_shape}:
-
-\begin{lstlisting}[language=Python]
-shape = e_mask.get('interp_shape', 1.0)
-shaped_progress = progress ** shape
-\end{lstlisting}
-
-Valori di shape diversi da 1.0 creano curve diverse:
 \begin{itemize}
-    \item \texttt{shape < 1.0}: Cambiamenti rapidi all'inizio, poi rallentamento
-    \item \texttt{shape > 1.0}: Inizio lento, accelerazione verso la fine
-    \item \texttt{shape = 1.0}: Interpolazione lineare standard
+    \item Parametri Numerici (Range, Mean/Std) : I loro valori vengono interpolati linearmente. Questo permette di creare effetti come un \textit{restringimento} del campo sonoro (interpolando verso un range più piccolo) o una \textit{focalizzazione} (interpolando verso una deviazione standard minore).
 \end{itemize}
 
-Questo controllo permette di modellare l'evoluzione temporale secondo necessità espressive specifiche.
-\subsection{Sistema Gerarchico del Glissando}
-Il glissando in Gamma non è semplicemente una transizione tra due frequenze, ma un sistema gerarchico che supporta molteplici modalità di specifica con priorità ben definite.
-\subsubsection{La Gerarchia delle Modalità}
-Il sistema implementa tre modalità di glissando con priorità decrescente:
+\begin{itemize}
+    \item Scelte Discrete (Choices) : Il sistema tenta un  cross-fade probabilistico . Se le scelte sono le stesse, i loro pesi (\texttt{weights}) vengono interpolati. Questo rea una transizione graduale nella probabilità di occorrenza, ad esempio passando da una predominanza di dinamiche piano a una di forte. Se le scelte sono diverse, il sistema effettua una transizione a scalino a metà del percorso.
+\end{itemize}
 
-\begin{lstlisting}[language=Python]
-\section{CASO 1: MODALITÀ OFFSET (priorità massima)}
-if 'offset_ottava' in mask or 'offset_registro' in mask:
-    offset_ottava = params.get('offset_ottava', 0)
-    offset_registro = params.get('offset_registro', 0)
-
-ottava_arrivo_calc = params['ottava'] + offset_ottava
-    registro_arrivo_calc = params['registro'] + offset_registro
-
-params['ottava_arrivo'] = ottava_arrivo_calc
-    params['registro_arrivo'] = registro_arrivo_calc
-\end{lstlisting}
-
-La modalità offset è relativa: specifica il glissando come movimento rispetto alla nota di partenza. Un \texttt{offset\_ottava: 2} produrrà sempre un salto di due ottave, indipendentemente dalla frequenza iniziale. Questo è utile per pattern che devono mantenere relazioni intervallari costanti.
-
-\begin{lstlisting}[language=Python]
-\section{CASO 2: MODALITÀ ASSOLUTA}
-elif 'ottava_arrivo' in mask or 'registro_arrivo' in mask:
-    params['ottava_arrivo'] = params.get('ottava_arrivo', params['ottava'])
-    params['registro_arrivo'] = params.get('registro_arrivo', params['registro'])
-\end{lstlisting}
-
-La modalità assoluta specifica la destinazione finale indipendentemente dal punto di partenza. Utile quando si vuole convergere verso una specifica altezza target.
-
-\begin{lstlisting}[language=Python]
-\section{CASO 3: DEFAULT (nessun glissando)}
-else:
-    params['ottava_arrivo'] = params['ottava']
-    params['registro_arrivo'] = params['registro']
-\end{lstlisting}
-
-Se nessuna modalità è specificata, la frequenza rimane costante.
-\subsubsection{Clipping e Validazione}
-Dopo il calcolo, tutti i parametri vengono validati e limitati:
-
-\begin{lstlisting}[language=Python]
-params['ottava_arrivo'] = int(round(np.clip(params['ottava_arrivo'], 
-                                           OTTAVE_RANGE[0], OTTAVE_RANGE[1])))
-params['registro_arrivo'] = int(np.clip(params['registro_arrivo'], 
-                                       REGISTRI_RANGE[0], REGISTRI_RANGE[1]))
-\end{lstlisting}
-
-Il clipping previene valori impossibili che potrebbero causare errori in Csound o produrre frequenze fuori dal range udibile. L'arrotondamento a intero mantiene la coerenza con il sistema di indicizzazione delle frequenze.
-\subsubsection{Integrazione con il Sistema di Frequenze}
-I parametri di glissando si integrano strettamente con il sistema di frequenze pitagoriche. In Csound, la funzione \texttt{calcFrequenza} viene chiamata due volte:
-
-\begin{lstlisting}[language=C]
-i_Freq1 = calcFrequenza(i_Ottava, i_Registro, i_RitmoCorrente)
-i_Freq2 = calcFrequenza(i_ottava_arrivo, i_registro_arrivo, i_RitmoCorrente)
-\end{lstlisting}
-
-Il fatto che \texttt{i\_RitmoCorrente} sia usato per entrambe le frequenze crea una coerenza armonica: il glissando mantiene la stessa posizione relativa all'interno della scala pitagorica, creando intervalli coerenti anche durante il movimento.
-\subsubsection{Implicazioni Compositive}
-Il sistema gerarchico del glissando permette diversi approcci compositivi:
+È importante notare che questo processo di interpolazione non solo guida la generazione degli eventi sonori, ma fornisce anche i dati per la visualizzazione grafica. Le \textit{buste di tendenza} visibili nel PDF generato da \texttt{CompositionDebugger} sono la rappresentazione visiva diretta dei valori interpolati in ogni punto del tempo. Questo crea una coerenza totale tra ciò che il compositore specifica, ciò che il sistema visualizza e ciò che l'orchestra Csound suona.
+\subsection{3.3 Un Caso di Studio: Il Sistema Gerarchico del Glissando}
+Il glissando in Gamma non è una semplice transizione di frequenza, ma un sistema gerarchico che illustra l'approccio progettuale del compositore: fornire opzioni potenti con priorità chiare.
 
 \begin{enumerate}
-    \item \textbf{Glissandi Strutturali}: Usando offset, si possono creare pattern di movimento coerenti attraverso diverse altezze iniziali
-    \item \textbf{Convergenze Armoniche}: Con destinazioni assolute, molteplici voci possono convergere verso punti focali comuni
-    \item \textbf{Texture Statiche}: L'assenza di parametri di glissando crea tessiture stabili
+    \item Modalità Offset (Priorità Massima): Specifica un intervallo di glissando relativo alla nota di partenza (es. \texttt{offset\_ottava: 2}). È ideale per creare pattern di movimento che mantengono la loro coerenza intervallare a diverse altezze.
+    \item Modalità Assoluta (Priorità Media) : Specifica una destinazione fissa (es. \texttt{ottava\_arrivo: 8}). È utile per creare convergenze armoniche, dove più voci, partendo da punti diversi, si dirigono verso un'unica regione tonale.
+    \item Default (Nessun Glissando) : In assenza di specifiche, la frequenza rimane statica.
 \end{enumerate}
-La combinazione di queste possibilità in layer diversi permette la creazione di texture complesse dove alcuni elementi si muovono mentre altri rimangono fermi, o dove movimenti paralleli e contrari coesistono.
+Questa gerarchia viene risolta in \texttt{\_generate\_params\_from\_mask()}, che calcola i parametri \texttt{ottava\_arrivo} e \texttt{registro\_arrivo} finali. Questi vengono poi passati a Csound, dove la funzione \texttt{calcFrequenza} è chiamata due volte, una per la frequenza di partenza e una per quella di arrivo, garantendo che entrambe rispettino la logica dell'intonazione pitagorica del sistema.
 
-Il sistema di generazione parametrica di Gamma dimostra come la complessità tecnica possa servire la semplicità compositiva. Attraverso un'architettura stratificata che separa la specifica dall'implementazione, il sistema permette ai compositori di lavorare al livello di astrazione più appropriato per le loro necessità espressive, mentre il motore sottostante si occupa di tradurre queste specifiche in parametri concreti per la sintesi.
+In conclusione, l'architettura di generazione parametrica di Gamma è stratificata e flessibile. Separa nettamente la specifica compositiva (l'intenzione nel YAML) dall'implementazione tecnica (la logica di generazione e interpolazione in Python). Questo permette al compositore di operare al livello di astrazione più consono, che sia definire un pattern nota per nota o semplicemente tracciare una \textit{tendenza} evolutiva, lasciando al sistema il compito di tradurre questa intenzione in una texture sonora ricca e coerente.

@@ -25,7 +25,6 @@ MD_FILES_ORDER = [
     "capitolo5.md",
     "capitolo6.md",
     "capitolo7.md",    
-    "capitolo8.md",    
     "conclusione.md"    
 ]
 

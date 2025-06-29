@@ -92,47 +92,15 @@ if i_ifn_section_env > 20 && i_section_duration > 0 then
 endif
 ```
 
-### GEN Routines e Loro Parametri
-
-Le GEN routines utilizzate nel sistema sono scelte per le loro caratteristiche specifiche:
-
-`GEN 5` Segmenti esponenziali:
-- Ideale per decadimenti naturali e attacchi percussivi
-- Richiede valori non-zero per evitare singolarità matematiche
-- Parametri: [valore, durata, valore, durata, ...]
-
-`GEN 6` Segmenti cubici:
-- Transizioni morbide senza discontinuità nelle derivate
-- Perfetta per inviluppi che devono suonare "organici"
-- Stessa sintassi di GEN 5 ma interpolazione diversa
-
-`GEN 7` Segmenti lineari:
-- Controllo preciso e prevedibile
-- Efficiente computazionalmente
-- Ideale per forme geometriche precise
-
-`GEN 10` Sintesi additiva:
-```yaml
-plateau_forte:
-  number: 23
-  size: 4096
-  gen_routine: 10
-  parameters: [1]
-```
-Usata qui in modo non convenzionale per creare un valore costante.
-
 ## Sistema di Macro e Costanti Globali
 
 Il template CSD di Gamma definisce un sistema di macro che parametrizza l'intero spazio sonoro:
 
 ```csound
-#define SQRT2 #1.4142135623730951#
-#define MAX_AMP #0.999#
 #define FONDAMENTALE #32#
 #define OTTAVE #10#
 #define INTERVALLI #200#
 #define REGISTRI #50#
-#define M_PI #3.141592653589793#
 ```
 
 ### Parametri dello Spazio Frequenziale
@@ -141,48 +109,13 @@ Le macro `OTTAVE`, `INTERVALLI` e `REGISTRI` definiscono la risoluzione del sist
 
 - `OTTAVE` (10): Copre l'intero range udibile da 32 Hz a ~32 kHz
 - `INTERVALLI` (200): Numero di divisioni per ottava nel sistema pitagorico
-- `REGISTRI` (50): Suddivisioni fini all'interno di ogni ottava
+- `REGISTRI` (50): Suddivisioni macro all'interno di ogni ottava
 
 La relazione tra questi parametri determina la granularità frequenziale:
 ```
 Totale frequenze = OTTAVE * INTERVALLI = 2000
 Risoluzione per registro = INTERVALLI / REGISTRI = 4 intervalli
 ```
-
-### Tabelle Globali e Allocazione Dinamica
-
-Il sistema utilizza due tabelle globali principali:
-
-```csound
-gi_Index init 1
-gi_eve_attacco ftgen 0, 0, 2^20, -2, 0
-gi_Intonazione ftgen 0, 0, $OTTAVE*$INTERVALLI+1, -2, 0
-```
-
-`gi_eve_attacco`: Una tabella enorme (2^20 = 1.048.576 elementi) che memorizza i tempi di attacco di tutti gli eventi generati. La dimensione generosa permette composizioni estremamente lunghe senza rischio di overflow.
-
-`gi_Intonazione`: Contiene tutte le frequenze del sistema pitagorico. La dimensione è calcolata dinamicamente come `OTTAVE * INTERVALLI + 1`, dove il +1 gestisce casi limite di indicizzazione.
-
-L'allocazione avviene con `ftgen`:
-- Primo parametro (0): Numero di tabella assegnato automaticamente
-- Secondo parametro (0): Creazione a init-time
-- Terzo parametro: Dimensione
-- Quarto parametro (-2): GEN routine per dati arbitrari
-
-### Gestione della Memoria
-
-Il sistema implementa strategie per ottimizzare l'uso della memoria:
-
-1. **Tabelle Temporanee**: Lo strumento Voce crea tabelle estese che vengono deallocate alla fine:
-```csound
-i_TempRitmiTab ftgen 0, 0, i_LenRitmiTab + 10000, -2, 0
-; ... uso della tabella ...
-ftfree i_TempRitmiTab, 0
-```
-
-2. **Condivisione delle Tabelle Ritmiche**: Pattern identici condividono le stesse tabelle attraverso il sistema di mappatura in Python.
-
-3. **Inizializzazione Lazy**: Le tabelle vengono popolate solo quando necessario, come `gi_Intonazione` che viene riempita dallo strumento Init.
 
 ### Integrazione con Python
 
@@ -200,5 +133,3 @@ Invece di numeri magici:
 ```yaml
 inviluppo_attacco: { value: 5 }  # Meno leggibile e manutenibile
 ```
-
-Il sistema di configurazione di Gamma dimostra come una buona architettura software possa rendere un sistema complesso sia potente che accessibile, permettendo estensioni e modifiche senza richiedere modifiche al core del sistema.

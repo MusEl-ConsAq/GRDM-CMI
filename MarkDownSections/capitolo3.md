@@ -1,244 +1,170 @@
-# ARCHITETTURA DEL COMPOSITORE GENERATIVO
 
-Il motore Python di Gamma rappresenta l'intelligenza orchestrativa del sistema, traducendo le specifiche compositive ad alto livello in eventi sonori concreti. Per comprendere come questa trasformazione avvenga, è necessario esplorare l'architettura software sottostante, un'architettura che riflette anni di raffinamento iterativo e bilancia sapientemente requisiti apparentemente contraddittori: la necessità di controllo deterministico con la flessibilità generativa, l'efficienza computazionale con la ricchezza espressiva, la complessità interna con la semplicità d'uso.
+# Introduzione e Architettura Generale
 
-## Design Pattern e Struttura delle Classi
+Il `generative_composerYaml2.py` è un sistema di composizione algoritmica che traduce una descrizione astratta di una struttura musicale, definita in formato YAML, in un file audio (WAV). Lo fa generando uno score per il software di sintesi sonora Csound.
 
-L'architettura di Gamma si fonda su tre classi principali, ciascuna incarnando un aspetto fondamentale del processo compositivo. Questa tripartizione non è casuale, ma riflette una profonda comprensione di come la composizione algoritmica si articoli in domini distinti ma interconnessi.
+L'architettura del programma è basata su tre componenti principali e un'esecuzione a fasi:
 
-### La Classe TimeScheduler: Il Tempo come Materiale Compositivo
+1.  **`GenerativeComposer`**: La classe principale che contiene la logica per interpretare la partitura YAML, generare i parametri stocastici degli eventi sonori e creare i file di score `.csd` per Csound.
+2.  **`CompositionDebugger`**: Una classe di utilità dedicata esclusivamente alla creazione di una visualizzazione grafica (in formato PDF) della composizione generata, simile a un "piano roll" arricchito con informazioni sulle tendenze parametriche.
+3.  **`TimeScheduler`**: Una classe specializzata nella generazione di sequenze temporali (gli *onset*, o istanti di inizio) degli eventi, secondo diversi modelli (lineare, accelerando, ritardando, etc.).
 
-Il tempo, in musica, non è semplicemente il contenitore degli eventi, ma un materiale compositivo a pieno titolo. La classe `TimeScheduler` incarna questa filosofia, trasformando modelli matematici astratti in distribuzioni temporali musicalmente significative:
+Il processo, orchestrato nel blocco `if __name__ == "__main__":`, non è monolitico ma suddiviso in fasi distinte e sequenziali, che permettono di separare la generazione, il rendering e la visualizzazione.
 
-```python
-class TimeScheduler:
-    def generate_onsets(self, model, duration, num_events):
-        if num_events == 0: return []
-        if num_events == 1: return [0.0]
-        
-        base_progress = np.linspace(0, 1, num_events, endpoint=False)
-        final_progress = np.zeros_like(base_progress)
-        model_type = model.get('type', 'linear')
-```
+## Fase di Input: Caricamento della Struttura della Composizione
 
-La decisione di lavorare con una progressione normalizzata nell'intervallo [0, 1] è particolarmente significativa. Questo approccio, che potrebbe sembrare una semplice scelta implementativa, rivela in realtà una comprensione profonda della natura scalare del tempo musicale. Una frase che accelera dal pianissimo al fortissimo in 10 secondi segue la stessa curva di una che lo fa in 60 secondi - cambia la scala temporale, non la forma del gesto. Normalizzando la progressione, TimeScheduler cattura questa invarianza gestaltica.
+Il punto di partenza è un file YAML. Il programma supporta la definizione di composizioni complesse, articolate in più parti, utilizzando la sintassi multi-documento di YAML (documenti separati da `---`).
 
-L'uso di `endpoint=False` merita particolare attenzione. Questa scelta apparentemente minore previene un problema sottile ma critico: se l'ultimo evento di una sezione coincidesse esattamente con l'inizio della successiva, si creerebbero sovrapposizioni non intenzionali. È un esempio di come l'architettura di Gamma incorpori la saggezza pratica acquisita attraverso l'uso reale del sistema.
-
-### La Classe GenerativeComposer: L'Orchestratore Invisibile
-
-Se TimeScheduler è il cronometrista, `GenerativeComposer` è il direttore d'orchestra - invisibile ma onnipresente, coordinando ogni aspetto della performance generativa:
+La funzione `load_all_compositions_from_yaml` si occupa di questo compito:
 
 ```python
-class GenerativeComposer:
-    def __init__(self, output_dir="composizioni_generate", tables_config_path="yaml/tables.yaml"):
-        self.base_path = Path(__file__).parent.resolve()
-        self.output_path = self.base_path / output_dir
-        self.time_scheduler = TimeScheduler()
-        
-        # Stato globale per mappatura tabelle
-        self.rhythm_table_map = {}
-        self.next_table_id = 1000
-        self.id_comp_counter = 0
+def load_all_compositions_from_yaml(file_path):
+    """
+    Carica una o più composizioni da un singolo file YAML.
+    I documenti multipli devono essere separati da '---'.
+    Restituisce una lista di strutture di composizione.
+    """
+    print(f"Caricamento partiture dal file multi-documento: {file_path}")
+    composizioni = []
+    try:
+        with open(file_path, 'r') as f:
+            # safe_load_all restituisce un generatore, lo convertiamo in lista
+            docs = list(yaml.safe_load_all(f))
+        # ... (gestione errori) ...
+        for i, composition in enumerate(docs):
+            if composition is None: continue 
+            composizioni.append(composition)
+        return composizioni
+    # ... (gestione eccezioni) ...
 ```
 
-L'inizializzazione della classe rivela immediatamente diverse scelte architetturali cruciali. L'uso di `Path(__file__).parent.resolve()` non è solo una questione di robustezza del codice - riflette la natura distribuita del sistema Gamma, dove file Python, Csound, YAML e WAV devono coesistere in una struttura gerarchica precisa. Risolvendo i percorsi in modo assoluto fin dall'inizio, il sistema previene un'intera classe di errori legati ai percorsi relativi che potrebbero emergere quando lo script viene eseguito da directory diverse.
+Ogni documento YAML caricato rappresenta una "Parte" della composizione. Ogni parte è una lista di "Sezioni", e ogni sezione può contenere uno o più "Layer". Questa struttura gerarchica (Parte -> Sezione -> Layer -> Evento) è il modello concettuale su cui si basa tutta la logica successiva.
 
-La scelta di iniziare gli ID delle tabelle da 1000 rivela una comprensione profonda dell'ecosistema Csound. Le tabelle con numeri bassi sono tradizionalmente riservate per usi speciali o predefiniti. Partendo da 1000, Gamma si assicura uno spazio di numerazione pulito, evitando conflitti anche in orchestrazioni Csound complesse che potrebbero avere le proprie tabelle predefinite.
+In aggiunta, viene caricato un file `tables.yaml` che definisce le caratteristiche degli inviluppi (es. attacco, rilascio) che verranno usati da Csound.
 
-Ma è nella gestione della mappatura dei ritmi che vediamo l'eleganza dell'architettura:
+## Il Nucleo Generativo: Dal Concetto ai Parametri
+
+Il cuore del sistema risiede nella classe `GenerativeComposer` e nella sua capacità di trasformare le "maschere" parametriche definite nel YAML in valori numerici concreti per ogni evento sonoro.
+
+### Struttura a Layer e `_process_layer`
+
+La generazione avviene all'interno di un "layer". Un layer può essere:
+-  **Statico**: Definito da uno `stato_unico`. Tutti gli eventi generati in questo layer attingeranno da un'unica maschera di parametri.
+-  **Dinamico**: Definito da uno `stato_iniziale` e uno `stato_finale`. I parametri degli eventi evolvono nel tempo, interpolando tra queste due maschere.
+
+La funzione `_process_layer` gestisce un singolo layer. I suoi passaggi chiave sono:
+1.  **Calcolo del Timing**: Determina la durata effettiva del layer basandosi sul `lifespan` (una finestra temporale relativa alla sezione, es. `[0.0, 0.5]` per la prima metà).
+2.  **Generazione degli Onset**: Utilizza `TimeScheduler` per calcolare gli istanti di attivazione dei cluster di eventi all'interno della durata del layer.
+3.  **Generazione degli Eventi**: Per ogni onset, determina la maschera parametrica (statica o interpolata) e genera un "cluster" di eventi sonori.
+
+### Generazione Stocastica dei Parametri (`_generate_params_from_mask`)
+
+Questa funzione è il motore stocastico. Prende una "maschera" (un dizionario che descrive un parametro) e produce un valore numerico. Supporta diversi tipi di generazione:
+
+-  **Distribuzione Uniforme**: Se la maschera contiene una chiave `range`.
 
 ```python
-rhythm_tuple = tuple(params['ritmi'])
-if rhythm_tuple not in self.rhythm_table_map:
-    self.rhythm_table_map[rhythm_tuple] = {
-        'ritmi_tab_num': self.next_table_id,
-        'pos_tab_num': self.next_table_id + 1
-    }
-    self.next_table_id += 2
+elif 'range' in p_mask:
+    min_val, max_val = p_mask['range']
+    # ...
+    val = random.uniform(min_val, max_val)
 ```
-
-Questo frammento implementa una forma sofisticata di memoizzazione. In una composizione tipica, certi pattern ritmici tendono a ripetersi - non per mancanza di immaginazione, ma perché la ripetizione e la variazione sono principi compositivi fondamentali. Invece di creare nuove tabelle Csound per ogni istanza di un pattern, il sistema riconosce pattern identici e riutilizza le tabelle esistenti. In una composizione di 30 minuti con centinaia di eventi, questo può ridurre il numero di tabelle da migliaia a poche decine, con conseguenti benefici in termini di memoria e tempo di inizializzazione.
-
-### La Classe CompositionDebugger: Vedere per Comporre
-
-La presenza di una classe dedicata alla visualizzazione non è un ripensamento o un'aggiunta tardiva, ma riflette una verità fondamentale della composizione algoritmica: quando i processi generativi creano migliaia di eventi, la visualizzazione diventa essenziale per comprendere e controllare il risultato:
+-   **Distribuzione Normale**: Se la maschera contiene `mean` e `std`.
+ 
+```python
+if 'mean' in p_mask and 'std' in p_mask:
+    mean = p_mask['mean']
+    std = p_mask['std']
+    val = np.random.normal(loc=mean, scale=std)
+```
+-   **Scelta Pesata**: Se la maschera contiene `choices` ed opzionalmente `weights`.
 
 ```python
-class CompositionDebugger:
-    def __init__(self, output_dir):
-        self.output_path = Path(output_dir)
-        self._labels_added = set()
+elif 'choices' in p_mask:
+    val = random.choices(p_mask['choices'], weights=p_mask.get('weights'), k=1)[0]
 ```
 
-L'attributo `_labels_added` illustra l'attenzione ai dettagli che permea il sistema. In composizioni con molti layer, ogni layer potrebbe teoricamente aggiungere la propria etichetta alla legenda del grafico. Senza controllo, una composizione con 20 layer che usano tutti "ottava" creerebbe 20 voci identiche nella legenda. Il set traccia quali etichette sono già state aggiunte, mantenendo i grafici leggibili anche per le composizioni più complesse.
+Questa logica viene applicata a tutti i parametri (altezza, durata, etc.), rendendo il sistema flessibile.
 
-### I Pattern Nascosti nell'Architettura
+### Interpolazione dei Parametri (`_interpolate_mask`)
 
-Analizzando l'architettura nel suo insieme, emergono diversi design pattern classici, implementati non per aderenza dogmatica a best practice, ma perché risolvono naturalmente i problemi specifici del dominio compositivo.
-
-Il **Factory Pattern** emerge nella generazione di parametri dalle maschere. Ogni tipo di maschera (range, choices, mean/std, value) richiede una logica di generazione diversa, ma il codice chiamante non deve preoccuparsene - chiede semplicemente "dammi un parametro da questa maschera" e riceve il valore appropriato.
-
-Il **Strategy Pattern** si manifesta nei modelli temporali. Che si tratti di distribuzione lineare, accelerando, ritardando o stocastica, l'interfaccia rimane identica - solo l'algoritmo interno cambia. Questo permette ai compositori di sperimentare con diversi modelli temporali semplicemente cambiando una stringa nel file YAML.
-
-Il **Builder Pattern** appare nella costruzione incrementale dei file CSD. Invece di generare l'intero file in un colpo solo, il sistema lo costruisce pezzo per pezzo - prima le tabelle degli inviluppi, poi quelle dei ritmi, infine gli eventi - permettendo flessibilità e estensibilità.
-
-## Pipeline di Elaborazione
-
-Il flusso di elaborazione in Gamma non è semplicemente una sequenza di operazioni, ma una coreografia attentamente orchestrata che bilancia parallelismo e sincronizzazione, efficienza e controllo.
-
-### La Filosofia del Parallelismo Controllato
-
-Gamma adotta un approccio pragmatico al parallelismo. Invece di parallelizzare tutto il possibile, il sistema identifica i colli di bottiglia reali - il rendering Csound - e concentra lì gli sforzi di ottimizzazione:
+Per i layer dinamici, questa funzione calcola una maschera intermedia tra `start_mask` e `end_mask` in base a un valore di `progress` (da 0 a 1). L'interpolazione è intelligente e si adatta al tipo di parametro:
+-  I parametri numerici (come `mean`, `std`, `range`) vengono interpolati linearmente.
+-  I parametri basati su scelte (`choices`) subiscono un *cross-fade* dei loro pesi (`weights`), creando una transizione probabilistica graduale da un set di scelte a un altro.
 
 ```python
-def execute_layer_rendering_and_collect_data(render_jobs, dirs, veteran_mode_active):
-    csound_procs = []
-    composer = GenerativeComposer()
-    
-    for job in render_jobs:
-        # Generazione eventi per questo layer
-        layer_events, layer_onsets = composer._process_layer(...)
-        
-        if layer_events:
-            composer.generate_csd(job['name'], layer_events, job['csd_path'], job['wav_path'])
-            proc_data = run_csound_process(job['csd_path'], job['name'], dirs['logs'])
-            if proc_data: 
-                csound_procs.append(proc_data)
+# Esempio di interpolazione di un range
+if 'range' in s_mask:
+    s_min, s_max = s_mask['range']
+    e_min, e_max = e_mask.get('range', s_mask['range'])
+    i_min = s_min + (e_min - s_min) * shaped_progress
+    i_max = s_max + (e_max - s_max) * shaped_progress
+    interp_mask[key]['range'] = [i_min, i_max]
 ```
 
-La generazione degli eventi rimane sequenziale - è veloce e potrebbe creare problemi di sincronizzazione se parallelizzata. Ma il rendering Csound, che può richiedere secondi o minuti per layer complessi, viene eseguito in parallelo. Questo approccio "parallelize what matters" massimizza i benefici minimizzando la complessità.
+### Generazione dello Score Csound (`generate_csd`)
 
-L'uso di `subprocess.Popen` merita un approfondimento:
+Una volta generata la sequenza completa di eventi, la funzione `generate_csd` assembla il file `.csd`. Non scrive codice Csound complesso, ma piuttosto popola un template.
+
+1.  **Tabelle Dinamiche (`f-statements`)**: Crea le tabelle per i pattern ritmici e gli inviluppi.
+2.  **Eventi (`i-statements`)**: Itera su ogni evento generato e scrive una riga di score (`i "Voce" ...`) con tutti i parametri calcolati.
 
 ```python
-process = subprocess.Popen(['csound', '--format=float', str(csd_path)], 
-                         stdout=log_file, stderr=log_file)
+# Frammento della riga di score generata
+score_lines += (f'i "Voce"\t{event_time:.4f}\t{p["durata_totale"]:.3f}\t'
+                f'{p["ritmi_tab_num"]}\t{p["durata_armonica"]:.3f}\t\t{p["dynamic_index"]:.6f}\t'
+                # ... altri parametri ...
+               )
 ```
+Questo file `.csd` è un output intermedio, pronto per essere processato da Csound per generare un file audio.
 
-`Popen` crea un nuovo processo senza attendere il suo completamento, permettendo al Python di continuare a lanciare altri processi Csound. Il reindirizzamento di stdout e stderr verso file di log individuali permette di diagnosticare problemi specifici di ogni layer senza che i messaggi si mescolino in un output confuso.
+## L'Orchestrazione del Rendering (Blocco `__main__`)
 
-### Il Modello Fork-Join e la Sincronizzazione
+L'approccio del compositore al rendering è granulare e mira a ottimizzare i tempi di lavoro, specialmente su composizioni complesse. Questo avviene attraverso una sequenza di fasi ben definita.
 
-Dopo aver lanciato tutti i processi in parallelo, il sistema deve attendere il loro completamento:
+### Fase 1: `plan_render_jobs`
 
-```python
-for process, name, log_file in csound_procs:
-    process.wait()
-    log_file.close()
-    if process.returncode != 0:
-        print(f"✗ ERRORE: Rendering del layer '{name}' fallito!")
-```
+Questa funzione analizza l'intera struttura della partitura e crea un "piano di lavoro". Non esegue alcun rendering, ma definisce *cosa-deve essere renderizzato. Per ogni layer che necessita di rendering, crea un "job", ovvero un dizionario contenente:
+-  La definizione del layer e della sezione a cui appartiene.
+-  I percorsi per i file `.csd` e `.wav` di output per quel singolo layer.
+-  Il tempo di inizio assoluto della sezione, calcolato tenendo conto del parametro `offset_inizio`.
 
-Questo implementa il classico modello "fork-join" della computazione parallela. Il "fork" avviene quando lanciamo i processi, il "join" quando li attendiamo. La semplicità di questo approccio nasconde la sua efficacia: su un sistema moderno con 8 core, 8 layer possono essere renderizzati simultaneamente, riducendo potenzialmente il tempo totale di un fattore 8.
+### Fase 2: `execute_layer_rendering_and_collect_data`
 
-### L'Innovazione del Veteran Mode
+Questa fase esegue i "job" di rendering dei layer.
+1.  Per ogni job, invoca la logica di `GenerativeComposer` per generare gli eventi solo per quel layer.
+2.  Genera un file `.csd` specifico per il layer.
+3.  Lancia un processo Csound (`subprocess.Popen`) per renderizzare il `.csd` del layer in un file `.wav`.
+4.  **Crucialmente**, raccoglie tutti i dati degli eventi generati in una struttura dati (`plot_data`). Questi dati sono essenziali per la visualizzazione.
 
-Il veteran mode rappresenta una delle innovazioni più pratiche di Gamma, nata dall'esperienza diretta del workflow compositivo:
+Questo approccio permette di renderizzare solo i layer modificati se si utilizza la `veteranMode`, una modalità che salta il rendering dei layer non contrassegnati come `veteranMode: True`.
 
-```python
-veteran_mode_active = any(
-    layer.get('veteranMode', False)
-    for part in all_composition_structures
-    for section in part
-    for layer in section.get('layers', [])
-)
-```
+### Fase 3: `generate_composition_plot` e la Cache di Visualizzazione
 
-Durante lo sviluppo di una composizione, è comune modificare ripetutamente un singolo layer mentre gli altri rimangono stabili. Senza veteran mode, ogni modifica richiederebbe il re-rendering dell'intera composizione. Con veteran mode, marcando i layer "veterani" (quelli già finalizzati), il sistema li salta durante il rendering, riutilizzando i file WAV esistenti. In una composizione di 20 minuti con 10 layer, modificare un singolo layer passa da 20 minuti di attesa a 2 minuti - un miglioramento 10x che trasforma il workflow da frustrante a fluido.
+Questa fase si occupa della visualizzazione. La sua caratteristica principale è l'uso di un file cache, `visual_cache.json`:
+1.  **Lettura della Cache**: Carica i dati di visualizzazione da esecuzioni precedenti, se disponibili.
+2.  **Merge**: Se sono stati generati nuovi dati (da `execute_layer_rendering...`), questi vengono uniti alla cache, sostituendo i dati vecchi per i layer che sono stati ri-renderizzati.
+3.  **Plotting**: Usa la classe `CompositionDebugger` per creare un PDF multi-pagina che mostra:
+    -  Gli eventi sonori come rettangoli.
+    -  Le "maschere di tendenza" (le buste grigie/arancioni) che mostrano l'evoluzione dei range parametrici.
+    -  L'evoluzione delle dinamiche.
+    -  Marcatori per sezioni e layer.
+4.  **Scrittura della Cache**: Salva lo stato aggiornato dei dati di visualizzazione nel file JSON. Questo garantisce che, alla prossima esecuzione in `veteranMode`, il grafico mostri comunque l'intera composizione (parti vecchie e nuove). La funzione `_sanitize_data_for_json` è un helper fondamentale qui, poiché converte tipi di dati specifici di NumPy e `pathlib` in formati compatibili con JSON.
 
-### La Cache Intelligente per la Visualizzazione
+### Fase 4 e 5: Assemblaggio
 
-Il sistema di cache rappresenta un altro esempio di ottimizzazione nata dalla pratica:
+Il rendering finale non avviene generando un unico, enorme file CSD. Avviene invece tramite un processo di assemblaggio gerarchico:
 
-```python
-if fresh_data.get('render_jobs_info'):
-    fresh_job_keys = set(
-        (job['section']['nome_sezione'], job['layer_idx']) 
-        for job in fresh_jobs_info
-    )
-    
-    # Rimuovi vecchi dati per layer aggiornati
-    final_data['events'] = [
-        e for e in final_data['events']
-        if (e['params']['section_name'], e['params'].get('layer_idx_ref')) 
-           not in fresh_job_keys
-    ]
-```
+1.  `execute_section_assembly`: Per ogni sezione, genera un CSD "assembler". Questo CSD non produce suono, ma si limita a leggere e mixare i file `.wav` dei singoli layer (generati nella Fase 2) per creare un unico file `.wav` per l'intera sezione.
 
-Questo meccanismo di merge selettivo permette di mantenere i dati di visualizzazione per i layer non modificati mentre aggiorna solo quelli cambiati. Il risultato è che anche composizioni massive possono essere ri-visualizzate in secondi invece che minuti.
+2.  `execute_final_assembly`: Genera un ultimo CSD "assembler" che prende i file `.wav` di tutte le sezioni e li posiziona in sequenza (rispettando gli `offset_inizio`) per creare il file `.wav` finale e completo della composizione.
 
-## Gestione dello Stato Globale
+Questo approccio a "render per layer, poi assembla" ha il vantaggio di essere più gestibile e di non richiedere la rigenerazione dell'intera composizione per piccole modifiche.
 
-La gestione dello stato in un sistema generativo presenta sfide uniche. Da un lato, lo stato globale facilita la coordinazione tra componenti; dall'altro, può creare accoppiamenti indesiderati e complicare il testing. Gamma adotta un approccio pragmatico che bilancia questi concern.
+Il `generative_composerYaml2.py` implementa un flusso di lavoro completo e disaccoppiato per la composizione algoritmica. Le sue caratteristiche tecniche salienti sono:
 
-### La Gerarchia dello Stato
-
-Lo stato in Gamma è organizzato gerarchicamente, riflettendo la struttura della composizione stessa:
-
-1. **Stato Globale del Sistema**: Configurazioni, mappature, contatori che persistono per l'intera sessione
-2. **Stato della Composizione**: Parametri specifici di una particolare composizione
-3. **Stato della Sezione**: Durata, tempo di inizio, envelope globale
-4. **Stato del Layer**: Maschere di tendenza, modelli temporali
-5. **Stato dell'Evento**: Parametri individuali di ogni suono generato
-
-Questa gerarchia non è solo concettuale ma si riflette nell'implementazione:
-
-```python
-# Stato globale
-self.rhythm_table_map = {}
-self.next_table_id = 1000
-
-# Stato compositivo
-absolute_section_onset = max(0.0, end_time_of_last_section + offset)
-
-# Stato del layer
-layer_start_time_abs = current_time_offset + (start_ratio * scaled_section_duration)
-
-# Stato dell'evento
-params['time'] = absolute_onset_time + jitter
-```
-
-### Le Mappature come Ponti Semantici
-
-Le varie mappature nel sistema non sono semplici dizionari, ma ponti semantici tra il mondo dei concetti musicali e quello dei valori numerici:
-
-```python
-# Mappatura simbolica degli inviluppi
-self.envelope_map = {
-    name: config['number'] 
-    for name, config in self.event_envelopes_config.items()
-}
-
-# Mappatura delle dinamiche
-self.dynamic_to_index = {
-    'ppp': 0, 'pp': 1, 'p': 2, 'mf': 3, 'f': 4, 'ff': 5, 'fff': 6
-}
-```
-
-La mappatura delle dinamiche, per esempio, traduce le indicazioni tradizionali della notazione musicale in indici numerici. Ma la scelta degli indici non è casuale: sono ordinati dal più piano al più forte, permettendo interpolazioni significative. Un layer che evolve da 'p' (indice 2) a 'f' (indice 4) può generare dinamiche intermedie interpolando gli indici - un 'mf' emergerebbe naturalmente a metà del percorso.
-
-### Robustezza attraverso la Gestione dei Percorsi
-
-La gestione dei percorsi in Gamma dimostra come dettagli apparentemente minori possano fare la differenza tra un prototipo fragile e un sistema robusto:
-
-```python
-dirs = {
-    'base': base_output_dir,
-    'layers_wav': base_output_dir / "wav" / "layers",
-    'sections_wav': base_output_dir / "wav" / "sections",
-    'layers_csd': base_output_dir / "csd" / "layers",
-    'sections_csd': base_output_dir / "csd" / "sections",
-    'logs': base_output_dir / "logs"
-}
-for d in dirs.values():
-    d.mkdir(parents=True, exist_ok=True)
-```
-
-L'uso di `pathlib` invece di concatenazione di stringhe non è una questione di stile, ma di sostanza. `pathlib` gestisce automaticamente le differenze tra Windows (che usa backslash) e Unix (che usa slash), previene errori come doppie barre, e fornisce metodi utili come `mkdir(parents=True)` che crea l'intera gerarchia di directory se necessario.
-
-### Verso un'Architettura Future-Proof
-
-Sebbene l'implementazione attuale sia single-threaded, l'architettura è stata progettata con un occhio al futuro. Lo stato minimamente condiviso, la predominanza di operazioni read-only, e i punti di sincronizzazione chiaramente identificati renderebbero relativamente semplice un'eventuale transizione a un'architettura multi-threaded.
-
-L'architettura di Gamma dimostra come un design attento possa servire simultaneamente le esigenze immediate e preparare il terreno per evoluzioni future. Ogni scelta - dalla struttura delle classi alla gestione dello stato, dal modello di parallelismo al sistema di cache - riflette non solo competenza tecnica ma comprensione profonda del dominio compositivo. È questa sintesi di rigore ingegneristico e sensibilità musicale che rende Gamma non solo un sistema funzionante, ma uno strumento che amplifica genuinamente le possibilità creative del compositore.
+-   **Configurazione Esterna (YAML)**: Offre un'interfaccia di alto livello per la descrizione musicale, separando la logica del codice dai dati della composizione.
+-   **Generazione Stocastica Multi-modello**: Fornisce un set flessibile di strumenti per definire il comportamento dei parametri sonori.
+-   **Rendering Granulare e a Fasi**: Scompone il problema del rendering in sotto-problemi più piccoli (layer, sezioni), ottimizzando il processo di lavoro iterativo.
+-   **Caching della Visualizzazione**: Garantisce che il feedback visivo sia sempre coerente e completo, anche quando si lavora solo su parti della composizione.
+-   **Assemblaggio Gerarchico**: Utilizza Csound non solo per la sintesi ma anche come uno strumento di montaggio audio per assemblare i componenti finali.

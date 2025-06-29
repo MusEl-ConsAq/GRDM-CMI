@@ -1,6 +1,6 @@
 # L'ORCHESTRA GAMMA 
 
-L'orchestra Csound di Gamma rappresenta il cuore pulsante del sistema di sintesi, dove i parametri astratti generati dal motore Python si trasformano in eventi sonori concreti. Questo capitolo esplora in dettaglio l'architettura degli strumenti principali e il flusso di elaborazione che porta dal numero al suono.
+L'orchestra Csound di Gamma non è un sistema autonomo, ma il motore di sintesi e di esecuzione progettato specificamente per interpretare le strutture musicali complesse generate dallo script Python `generative_composer.py`. Ogni strumento e opcode è stato creato per tradurre in suono un parametro o un comportamento definito nel file YAML di input. Lo strumento Voce funge da "ponte" principale, ricevendo un intero "comportamento" (un cluster di eventi) da Python e orchestrandone la micro-temporalità e la sintesi. In questo capitolo, analizzeremo come questa traduzione avviene, partendo dal livello macroscopico (Voce) fino al dettaglio del singolo campione audio (eventoSonoro).
 
 ## Lo Strumento Voce: Generatore di Comportamenti
 
@@ -41,6 +41,20 @@ Ogni parametro ha un significato musicale preciso:
 - `i_Ottava` e `i_Registro`: coordinate nello spazio delle altezze di partenza
 - `i_ottava_arrivo` e `i_registro_arrivo`: destinazione per eventuali glissandi
 - `i_NonlinearMode`: seleziona l'algoritmo di generazione per nuovi ritmi
+
+### Gestione Adattiva della Durata e dei Confini di Sezione
+
+Un aspetto cruciale per la coerenza musicale è la gestione degli eventi che superano i confini della loro sezione. Il parametro iSafetyBuffer attiva una logica di controllo fondamentale:
+
+```csound
+    if i_EventAttack + i_EventDuration > i_section_end then 
+        if iSafetyBuffer == 1 then
+            i_EventDuration = i_section_end - i_EventAttack + random:i(0, i_duration_leeway)
+        endif
+    endif
+```
+        
+Quando un evento sta per "sforare" la fine della sezione (definita da `i_section_end`), la sua durata viene troncata per terminare esattamente al confine. Inoltre, viene aggiunto un piccolo tempo casuale (`i_duration_leeway`) per evitare che tutti gli eventi terminino bruscamente allo stesso istante, creando una fine più organica e meno artificiale. Questa logica, controllata da Python, è essenziale per assemblare sezioni consecutive senza creare sovrapposizioni o troncamenti sonori indesiderati (qualora si manteng il safety buffer attivo).
 
 ### Il Loop Generativo Principale
 
@@ -108,81 +122,52 @@ Questo approccio permette di estendere dinamicamente la sequenza ritmica oltre i
 La creazione effettiva degli eventi sonori avviene attraverso la chiamata a `schedule`:
 
 ```csound
-schedule "eventoSonoro", i_EventAttack - p2, i_EventDuration, i_DynamicIndex, i_Freq1, i_Pos,
-        i_RitmoCorrente, i_Freq2, i_ifnAttacco, gi_Index, i_IdComp, i_SensoMovimento, 
-        i_ifn_section_env, i_section_start_time, i_section_duration
+schedule "eventoSonoro", i_EventAttack - p2, i_EventDuration, i_DynamicIndex, i_Freq1, i_Pos, i_RitmoCorrente, i_Freq2, i_ifnAttacco, gi_Index, i_IdComp, i_SensoMovimento, i_ifn_section_env, i_section_start_time, i_section_duration
 ```
 
-Notare come `i_EventAttack - p2` converta il tempo assoluto in tempo relativo all'inizio dello strumento Voce, mantenendo la coerenza temporale nella gerarchia degli strumenti.
+Il parametro `i_RitmoCorrente` viene passato come `p7` allo strumento eventoSonoro, dove viene letto come `iHR` che spiegherò in seguito.
 
 ## EventoSonoro: Dal Parametro al Suono
 
 Lo strumento `eventoSonoro` è responsabile della generazione effettiva del suono. Riceve i parametri calcolati da Voce e li trasforma in segnale audio attraverso sintesi e processamento.
 
-### Inizializzazione e Validazione Parametri
-
-```csound
-instr eventoSonoro
-   i_DynamicIndex = p4
-   i_debug=gi_debug
-   ifreq1 = limit(p5, 20, sr/2)   
-   iwhichZero = abs(p6)    
-   iHR = max(1, abs(p7))
-
-   iPeriod = $M_PI * 2 / iHR
-   
-   iradi = (iwhichZero > 0 ? (iwhichZero - 1) * iPeriod : 0)
-   ifreq2 = limit(p8, 20, sr/2)
-
-   ifn_shape = (p9 == 0 ? 2 : p9)
-```
-
-I parametri vengono immediatamente validati e limitati per evitare valori che potrebbero causare problemi:
-- Le frequenze sono limitate tra 20 Hz e la frequenza di Nyquist
-- `iHR` (harmonic ratio) è forzato ad essere almeno 1
-- `ifn_shape` ha un default alla tabella 2 se non specificato
-
 ### Sistema di Compensazione Isofonica dell'Ampiezza
 
-Una delle caratteristiche più sofisticate di Gamma è l'implementazione di un sistema di calibrazione dell'ampiezza basato sulle curve isofoniche ISO 226:2003. Questo garantisce che la percezione di loudness rimanga costante indipendentemente dalla frequenza.
+Una delle caratteristiche più sofisticate di Gamma è l'implementazione di un sistema di calibrazione dell'ampiezza basato sulle curve isofoniche ISO 226:2003. Per comprendere l'importanza di questa implementazione, è necessario esaminare il fenomeno psicoacustico che la motiva.
 
-Il calcolo dell'ampiezza avviene attraverso una catena di UDO specializzati:
+L'orecchio umano non percepisce tutte le frequenze con la stessa sensibilità. Un tono puro a 100 Hz deve avere un'intensità fisica significativamente maggiore di un tono a 3000 Hz per essere percepito con la stessa loudness. Le curve isofoniche mappano questa non-linearità percettiva, mostrando quali livelli di pressione sonora (SPL) sono necessari a diverse frequenze per produrre la stessa sensazione di loudness.
+
+Lo standard ISO 226:2003 rappresenta la revisione più recente di queste curve, basata su estesi studi psicoacustici internazionali. Ogni curva rappresenta un livello di loudness costante misurato in phon, dove per definizione:
+- A 1000 Hz, il livello in phon equivale al livello in dB SPL
+- A tutte le altre frequenze, il livello in dB SPL necessario varia secondo la curva
+
+Il sistema utilizza tre tabelle fondamentali derivate dallo standard ISO:
+
+```csound
+giIsoFreqs ftgen 0, 0, 32, -2, 20, 25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500
+giAf       ftgen 0, 0, 32, -2, 0.532, 0.506, 0.480, 0.455, 0.432, 0.409, 0.387, 0.367, 0.349, 0.330, 0.315, 0.301, 0.288, 0.276, 0.267, 0.259, 0.253, 0.250, 0.246, 0.244, 0.243, 0.243, 0.243, 0.242, 0.242, 0.245, 0.254, 0.271, 0.301
+giLu       ftgen 0, 0, 32, -2, -31.6, -27.2, -23.0, -19.1, -15.9, -13.0, -10.3, -8.1, -6.2, -4.5, -3.1, -2.0, -1.1, -0.4, 0.0, 0.3, 0.5, 0.0, -2.7, -4.1, -1.0, 1.7, 2.5, 1.2, -2.1, -7.1, -11.2, -10.7, -3.1
+giTf       ftgen 0, 0, 32, -2, 78.5, 68.7, 59.5, 51.1, 44.0, 37.5, 31.5, 26.5, 22.1, 17.9, 14.4, 11.4, 8.6, 6.2, 4.4, 3.0, 2.2, 2.4, 3.5, 1.7, -1.3, -4.2, -6.0, -5.4, -1.5, 6.0, 12.6, 13.9, 12.3
+```
+
+Questi parametri rappresentano:
+- **giAf**: Esponente di loudness, determina la pendenza della funzione di trasferimento
+- **giLu**: Livello di loudness alla soglia, rappresenta la correzione per la soglia uditiva
+- **giTf**: Soglia uditiva in campo libero, il livello minimo udibile in condizioni ideali
+
+Il calcolo dell'ampiezza compensata avviene in più fasi:
 
 ```csound
 kamp GetIsoAmp_k i_DynamicIndex, ifreq1, ifreq2
 ```
 
-Questo UDO k-rate gestisce glissandi compensando dinamicamente l'ampiezza. Vediamo l'implementazione:
-
-```csound
-opcode GetIsoAmp_k, k, iii
-    iDynamicIndex, iFreqStart, iFreqEnd xin
-    
-    ; 1. Calcola le ampiezze isofoniche per i punti di inizio e fine a i-rate
-    iAmpStart       GetIsoAmp       iFreqStart, iDynamicIndex
-    iAmpEnd         GetIsoAmp       iFreqEnd, iDynamicIndex
-
-    if iAmpStart > iAmpEnd then
-        kf expseg  1, p3, 0.0001
-        kFinalAmp = (kf * (iAmpStart-iAmpEnd))+iAmpEnd
-    elseif iAmpStart < iAmpEnd then
-        kf expseg  0.0001, p3, 1
-        kFinalAmp = (kf * (iAmpEnd-iAmpStart))+iAmpStart
-    else
-        kFinalAmp = iAmpStart
-    endif
-    xout kFinalAmp
-endop
-```
-
-Il cuore del sistema è l'UDO `GetIsoAmp`:
+Questo UDO k-rate gestisce la compensazione durante i glissandi. Per frequenze statiche, il calcolo è più diretto:
 
 ```csound
 opcode GetIsoAmp, i, ii
     iFrequency, iDynamicIndex xin
-
     iSafeFrequency = limit(iFrequency, 20, 12500)
-
+    
     ; 1. Recupera i parametri di base per la dinamica data
     iPhonLevel, iDbfsRef1kHz GetDynamicParams iDynamicIndex
     
@@ -205,12 +190,14 @@ opcode GetIsoAmp, i, ii
 endop
 ```
 
-La conversione da Phon a SPL utilizza le curve ISO interpolate:
+Invece di applicare curve di equalizzazione complesse, il sistema calcola quanto la frequenza target si discosta dal riferimento a 1kHz e applica questa differenza al livello dBFS desiderato.
+
+La conversione da phon a SPL implementa la formula matematica dello standard:
 
 ```csound
 opcode PhonToSpl_i, i, ii
     iphon, ifreq    xin
-        
+    
     ; Interpolazione lineare dalle tabelle ISO
     iaf             Interp  ifreq, giIsoFreqs, giAf
     ilu             Interp  ifreq, giIsoFreqs, giLu
@@ -236,9 +223,36 @@ opcode PhonToSpl_i, i, ii
 endop
 ```
 
+La formula si divide in due termini:
+- **iterm1**: Rappresenta la componente lineare della loudness, dominante a livelli alti
+- **iterm2**: Cattura la non-linearità vicino alla soglia uditiva
+
+Il caso speciale `if iaf_value <= 0` gestisce situazioni vicine o sotto la soglia uditiva, dove la formula principale potrebbe produrre valori matematicamente indefiniti.
+
+Questa implementazione garantisce che:
+
+1. **Coerenza Percettiva**: Un evento marcato come `mf` (mezzoforte) mantiene la stessa loudness percepita indipendentemente dalla sua frequenza
+2. **Glissandi Naturali**: Durante un glissando, l'ampiezza viene continuamente aggiustata per compensare i cambiamenti di sensibilità dell'orecchio
+3. **Bilanciamento Automatico**: In texture polifoniche, eventi in registri diversi mantengono bilanciamento percettivo senza intervento manuale
+
+Per esempio, un evento a 100 Hz marcato come `f` (forte) riceverà automaticamente più energia di uno a 3000 Hz con la stessa dinamica, compensando la minore sensibilità dell'orecchio alle basse frequenze. Questa compensazione è particolarmente critica nel sistema pitagorico di Gamma, dove le frequenze generate possono spaziare su tutto lo spettro udibile.
+
+L'implementazione k-rate per i glissandi assicura che questa compensazione avvenga continuamente:
+
+```csound
+if iAmpStart > iAmpEnd then
+    kf expseg  1, p3, 0.0001
+    kFinalAmp = (kf * (iAmpStart-iAmpEnd))+iAmpEnd
+elseif iAmpStart < iAmpEnd then
+    kf expseg  0.0001, p3, 1
+    kFinalAmp = (kf * (iAmpEnd-iAmpStart))+iAmpStart
+```
+
+L'uso di segmenti esponenziali invece che lineari è per la natura logaritmica della percezione dell'ampiezza, creando transizioni che appaiono lineari all'ascolto.
+
 ### Sistema di Spazializzazione Mid-Side e Armoniche Spaziali
 
-La spazializzazione in Gamma va oltre il semplice panning stereofonico, implementando un sistema basato su "armoniche spaziali" che deriva dalla teoria delle armoniche ritmiche. Il concetto chiave è che i valori ritmici non solo organizzano il tempo e selezionano le frequenze, ma definiscono anche il movimento nello spazio stereofonico.
+La spazializzazione in Gamma va oltre il semplice panning stereofonico, implementando un sistema basato su "armoniche spaziali" di mia ideazione che deriva dalla teoria delle armoniche ritmiche. Il concetto chiave è che i valori ritmici non solo organizzano il tempo e selezionano le frequenze, ma definiscono anche il movimento nello spazio stereofonico.
 
 Vediamo come si sviluppa questo sistema partendo dai parametri di base:
 
@@ -312,10 +326,6 @@ aL = (aMid + aSide) / $SQRT2
 aR = (aMid - aSide) / $SQRT2
 ```
 
-Questa matrice di rotazione:
-- Mantiene potenza costante durante il movimento
-- Crea un campo stereofonico coerente
-- Permette movimenti fluidi nello spazio
 
 ### Gestione degli Inviluppi Multipli
 
@@ -373,14 +383,10 @@ opcode GenPythagFreqs, i, iiii
     od
 ```
 
-### Costruzione della Tabella Frequenze
-
 Il sistema genera una tabella bidimensionale concettuale dove:
 - Ogni ottava contiene `iNumIntervals` frequenze (200 nel nostro caso)
 - Le frequenze sono generate attraverso iterazioni della quinta perfetta (3/2)
 - Ogni quinta che supera l'ottava viene riportata all'interno tramite divisione per 2
-
-### Ordinamento e Memorizzazione
 
 Dopo la generazione, le frequenze vengono ordinate all'interno di ogni ottava:
 
@@ -432,18 +438,18 @@ La formula di indicizzazione `i_OffsetIntervallo + i_RitmoCorrente` crea una rel
 ### Implicazioni Compositive
 
 Questa architettura crea una profonda interconnessione tra dimensione temporale, frequenziale e spaziale. Un pattern ritmico [3, 5, 8, 13] non solo definisce:
-- Le durate relative degli eventi (durataArmonica/3, durataArmonica/5, etc.)
+- Le durate primarie relative degli eventi (durataArmonica/3, durataArmonica/5, etc.) ( primarie poiché trasfigurate successivamente da un moltiplicatore di durata).
 - Le altezze selezionate dalla tabella pitagorica
 - Il numero di suddivisioni spaziali e il pattern di movimento stereofonico
 - La forma dell'inviluppo di ampiezza quando si usano le armoniche spaziali
 
 L'uso dell'intonazione pitagorica invece del temperamento equabile aggiunge ulteriore ricchezza armonica: le quinte sono pure (rapporto 3:2), ma questo genera comma pitagorici e intervalli microtonali che colorano il risultato sonoro con battimenti e risonanze particolari.
 
-L'orchestra Gamma dimostra come un'architettura ben progettata possa creare connessioni profonde tra parametri apparentemente indipendenti, trasformando relazioni numeriche astratte in strutture musicali percettivamente significative. La gerarchia Voce → eventoSonoro, supportata dal sistema di intonazione pitagorica, dalle sofisticate tecniche di compensazione isofonica e dal sistema di armoniche spaziali, fornisce al compositore uno strumento di straordinaria flessibilità espressiva, capace di generare tessiture sonore complesse da specifiche relativamente semplici.
+ La gerarchia Voce → eventoSonoro, supportata dal sistema di intonazione pitagorica, dalle tecniche di compensazione isofonica e dal sistema di armoniche spaziali, fornisce al compositore uno strumento di straordinaria flessibilità espressiva, capace di generare texture complesse da specifiche relativamente semplici.
 
 ## NonlinearFunc: Il Generatore di Ritmi Caotici
 
-L'opcode `NonlinearFunc` rappresenta uno degli elementi più innovativi di Gamma, fornendo un sistema sofisticato per la generazione di sequenze ritmiche che evolvono nel tempo secondo principi deterministici, periodici o caotici. Questo UDO (User Defined Opcode) estende le possibilità compositive oltre i pattern ritmici predefiniti, permettendo l'esplorazione di territori ritmici emergenti.
+L'opcode `NonlinearFunc` rappresenta un sistema per la generazione di sequenze ritmiche che evolvono nel tempo secondo principi deterministici, periodici o caotici. Questo UDO (User Defined Opcode) estende le possibilità compositive oltre i pattern ritmici predefiniti, permettendo l'esplorazione di territori ritmici emergenti.
 
 ### Struttura e Parametri dell'Opcode
 
@@ -569,7 +575,7 @@ else
     iDeterministic = (iNonlinear1 + iNonlinear2 + iNonlinear3) / 3
 ```
 
-La modalità "Caos Vero" rappresenta l'approccio più sofisticato, combinando molteplici generatori non lineari con componenti stocastiche.
+La modalità "Caos Vero" rappresenta l'approccio più interessante, combinando molteplici generatori non lineari con componenti stocastiche.
 
 La generazione dei seed utilizza moltiplicatori irrazionali approssimati:
 - 1.3 ≈ √1.69 
@@ -631,15 +637,3 @@ L'output di NonlinearFunc influenza direttamente:
 - **Altezza**: Il ritmo viene usato come indice nella tabella delle frequenze
 - **Spazializzazione**: Determina il parametro iHR per le armoniche spaziali
 
-### Implicazioni Compositive e Estetiche
-
-L'uso di NonlinearFunc permette di esplorare diverse estetiche ritmiche:
-
-- **Modalità 0 (Convergente)**: Crea un senso di "arrivo" o "risoluzione" ritmica, utile per conclusioni o punti di stasi
-- **Modalità 1 (Periodica)**: Genera groove complessi ma ripetitivi, ideale per sezioni di sviluppo
-- **Modalità 2 (Caotica Deterministica)**: Produce variazioni continue senza ripetizioni, perfetta per tessiture in evoluzione
-- **Modalità 3 (Caos Vero)**: Bilancia imprevedibilità e coerenza, creando interesse sostenuto
-
-La possibilità di cambiare modalità durante la composizione (attraverso il parametro YAML `nonlinear_mode`) permette di modulare il grado di prevedibilità/caos nel flusso ritmico, creando archi formali che vanno dall'ordine al disordine e viceversa.
-
-L'implementazione di NonlinearFunc dimostra come principi matematici complessi possano essere tradotti in strumenti compositivi pratici, offrendo al compositore un controllo parametrico su processi generativi sofisticati senza richiedere una comprensione profonda della matematica sottostante.
