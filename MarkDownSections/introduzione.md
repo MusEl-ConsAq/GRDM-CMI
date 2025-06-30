@@ -16,9 +16,9 @@ La scelta del nome "Gamma" riflette precisamente questa funzione: rappresenta un
 
 Gamma si inserisce nella tradizione della composizione sistematica ispirandosi liberamente ai metodi di lavoro sviluppati da Iannis Xenakis e Barry Truax. L'approccio delle "maschere di tendenza" che caratterizza il sistema non è un'interpretazione personale e un'implementazione specifica di tecniche già consolidate nella letteratura della computer music. Xenakis aveva esplorato l'uso di distribuzioni probabilistiche per la generazione di masse sonore. Truax sviluppò l'approccio delle maschere di tendenza per necessità pratiche legate alla sintesi granulare: quando si lavora con tecniche che richiedono la generazione di milioni di parametri per controllare nuvole di grani sonori, diventa impossibile specificare ogni singolo valore. Le maschere di tendenza emergono quindi come soluzione naturale per gestire questa complessità, permettendo di definire comportamenti statistici globali piuttosto che valori individuali.
 
-Ciò che Gamma apporta a questa tradizione è una sistematizzazione particolare di questi concetti. Il sistema implementa quattro modalità distinte di generazione parametrica (range, choices, distribuzione normale, valore fisso), organizzate in una gerarchia compositiva chiara (composizione → sezioni → layer → eventi). Questa strutturazione permette di gestire la complessità mantenendo un controllo compositivo significativo, preparando il terreno per l'evoluzione verso il sistema adattivo previsto.
+Ciò che Gamma apporta a questa tradizione è una sistematizzazione particolare di questi concetti. Il sistema implementa quattro modalità distinte di generazione parametrica (range, choices, distribuzione normale, valore fisso), organizzate in una gerarchia compositiva chiara (composizione → sezioni → layer → eventi). Questa strutturazione permette di gestire la complessità mantenendo un controllo compositivo semplice.
 
-L'uso delle maschere di tendenza in Gamma permette al compositore di lavorare su diversi livelli di astrazione simultaneamente. A livello micro, si possono definire distribuzioni precise per singoli parametri; a livello macro, si possono creare evoluzioni graduali attraverso l'interpolazione tra stati.
+L'uso delle maschere di tendenza in Gamma permette di lavorare su diversi livelli di astrazione simultaneamente. A livello micro, si possono definire distribuzioni precise per singoli parametri; a livello macro, si possono creare evoluzioni graduali attraverso l'interpolazione tra stati.
 
 ## Struttura e Obiettivi della Tesina
 
@@ -28,6 +28,6 @@ Gli obiettivi principali sono:
 
 1. **Documentare l'architettura del sistema**: Fornire una descrizione dettagliata e sistematica di tutti i componenti software che costituiscono Gamma, dalle strutture dati Python agli strumenti Csound, dalla sintassi YAML al sistema di visualizzazione.
 
-4. **Valutare criticamente il sistema**: Identificare punti di forza e limitazioni di Gamma, sia dal punto di vista tecnico che estetico, fornendo spunti per sviluppi futuri.
+4. **Valutare criticamente il sistema**: far risaltare attraverso la spiegazoine i punti di forza e i punti deboli del alvoro, sia dal punto di vista tecnico che estetico, fornendo spunti per sviluppi futuri.
 
 5. **Preparare il terreno per Delta**: Comprendere come l'esperienza di Gamma informi e prepari lo sviluppo del sistema adattivo completo previsto per Delta.

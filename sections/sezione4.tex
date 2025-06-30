@@ -1,7 +1,7 @@
 % --- Contenuto LaTeX autogenerato da capitolo4.md (sezione 5) ---
 
-\section{Dall'Intenzione alla Nota: Maschere di Tendenza e Generazione Parametrica}
-La generazione parametrica è il motore alchemico di Gamma, il processo centrale attraverso cui le intenzioni del compositore, espresse come  maschere di tendenza  nel file YAML, vengono trasformate in valori numerici concreti per ogni singolo evento sonoro. Se l'orchestra Csound è il corpo esecutore, i metodi analizzati in questo capitolo rappresentano il cervello decisionale che lo pilota. Analizzeremo come il sistema traduce l'astrazione in suono, con particolare attenzione alle tecniche di generazione, interpolazione e gestione della coerenza strutturale.
+\section{DALL'INTENZIONE ALLA NOTA: MASCHERE DI TENDENZA E GENERAZIONE PARAMETRICA}
+La generazione parametrica è il motore alchemico di Gamma, il processo centrale attraverso cui le intenzioni del compositore, espresse come  maschere di tendenza  nel file YAML, vengono trasformate in valori numerici concreti per ogni singolo evento sonoro. Analizzeremo come il sistema traduce l'astrazione in suono, con particolare attenzione alle tecniche di generazione, interpolazione e gestione della coerenza strutturale.
 \subsection{Il Motore Generativo: \texttt{\_generate\_params\_from\_mask()}}
 Il metodo \texttt{\_generate\_params\_from\_mask()} è il punto di convergenza tra l'astrazione compositiva e la concretezza numerica. Implementa la logica che trasforma una singola maschera di tendenza nei parametri specifici per un evento sonoro, gestendo una varietà di strategie generative per rispondere a diverse necessità espressive.
 \subsubsection{Architettura e Gestione Specializzata}
@@ -17,7 +17,7 @@ SKIPPED_KEYS = {
 }
 \end{lstlisting}
 Questa separazione permette a un loop generico di gestire i parametri puramente numerici, mentre logiche dedicate si occupano di tradurre concetti come \texttt{'dinamica': 'f'} nell'indice numerico richiesto da Csound o di generare intere sequenze ritmiche da una categoria come \texttt{'medi'}.
-\subsubsection{Le Modalità di Generazione: Un Toolkit Espressivo}
+\subsubsection{Le Modalità di Generazione}
 Il cuore del metodo itera sui parametri, applicando la modalità di generazione più appropriata in base alla struttura della maschera.
 
 \begin{lstlisting}[language=Python]
@@ -42,7 +42,7 @@ Questo toolkit di quattro modalità offre al compositore un controllo granulare 
 
 \begin{enumerate}
     \item Distribuzione Normale : Ideale per creare una \textit{massa} sonora attorno a un centro tonale o timbrico. Un'ottava definita come \texttt{\{mean: 5, std: 0.5\}} tenderà a rimanere nell'ottava 5, ma con occasionali e naturali \textit{fughe} verso le ottave vicine. La deviazione standard diventa un parametro espressivo che controlla la \textit{disciplina} del materiale.
-    \item Range Uniforme : Utile quando tutti i valori in un intervallo sono ugualmente desiderabili. Un \texttt{range: [1, 10]} per il registro crea salti discreti, mentre un \texttt{range: [1.0, 10.0]} abilita micro-intervalli, mostrando come una scelta tecnica influenzi direttamente il risultato sonoro.
+    \item Range Uniforme \texttt{range: [1, 10]}: Utile quando tutti i valori in un intervallo sono ugualmente possibili.
     \item Scelta Pesata : Permette di definire il \textit{colore} statistico di una sezione. Una dinamica specificata come \texttt{\{choices: ['p', 'mf', 'f'], weights: [0.6, 0.3, 0.1]\}} assicura una predominanza di eventi piano, pur mantenendo la varietà.
     \item Valore Fisso : Garantisce il determinismo assoluto, essenziale per parametri strutturali come il senso di movimento spaziale.
 \end{enumerate}
@@ -63,8 +63,8 @@ elif 'choices' in rhythm_mask:
         params['ritmi'] = self._generate_rhythm_pattern(choice)
 \end{lstlisting}
 Questa architettura permette al compositore di scegliere il livello di dettaglio più consono: specificare un pattern esatto, scegliere da una libreria di pattern, o semplicemente indicare una \textit{qualità} ritmica desiderata.
-\subsection{3.2 L'Evoluzione nel Tempo: Interpolazione delle Maschere}
-Se la generazione da una singola maschera crea eventi statici, l'interpolazione tra due maschere (\texttt{stato\_iniziale} e \texttt{stato\_finale}) dà vita a processi dinamici e trasformativi. Il metodo \texttt{\_interpolate\_mask()} implementa questa logica con una particolare attenzione alla robustezza e alla coerenza musicale.
+\subsection{L'Evoluzione nel Tempo: Interpolazione delle Maschere}
+Se la generazione da una singola maschera crea eventi statici, l'interpolazione tra due maschere (\texttt{stato\_iniziale} e \texttt{stato\_finale}) dà vita a processi dinamici e trasformativi. Il metodo \texttt{\_interpolate\_mask()} implementa questa logica.
 \subsubsection{Gestione delle Transizioni Asimmetriche}
 Un problema chiave nell'interpolazione è come gestire parametri che compaiono solo nello stato finale. Gamma adotta una strategia di \textit{riempimento} che ne aumenta la flessibilità.
 
@@ -82,15 +82,15 @@ Se un parametro è definito solo alla fine, il sistema assume che fosse presente
 L'interpolazione si adatta al tipo di parametro, producendo transizioni musicalmente significative:
 
 \begin{itemize}
-    \item Parametri Numerici (Range, Mean/Std) : I loro valori vengono interpolati linearmente. Questo permette di creare effetti come un \textit{restringimento} del campo sonoro (interpolando verso un range più piccolo) o una \textit{focalizzazione} (interpolando verso una deviazione standard minore).
+ \item Parametri Numerici (Range, Mean/Std) : I loro valori vengono interpolati linearmente. Questo permette di creare effetti come un \textit{restringimento} del campo sonoro (interpolando verso un range più piccolo) o una \textit{focalizzazione} (interpolando verso una deviazione standard minore).
 \end{itemize}
 
 \begin{itemize}
-    \item Scelte Discrete (Choices) : Il sistema tenta un  cross-fade probabilistico . Se le scelte sono le stesse, i loro pesi (\texttt{weights}) vengono interpolati. Questo rea una transizione graduale nella probabilità di occorrenza, ad esempio passando da una predominanza di dinamiche piano a una di forte. Se le scelte sono diverse, il sistema effettua una transizione a scalino a metà del percorso.
+ \item Scelte Discrete (Choices) : Il sistema tenta un  cross-fade probabilistico . Se le scelte sono le stesse, i loro pesi (\texttt{weights}) vengono interpolati. Questo rea una transizione graduale nella probabilità di occorrenza, ad esempio passando da una predominanza di dinamiche piano a una di forte. Se le scelte sono diverse, il sistema effettua una transizione a scalino a metà del percorso.
 \end{itemize}
 
-È importante notare che questo processo di interpolazione non solo guida la generazione degli eventi sonori, ma fornisce anche i dati per la visualizzazione grafica. Le \textit{buste di tendenza} visibili nel PDF generato da \texttt{CompositionDebugger} sono la rappresentazione visiva diretta dei valori interpolati in ogni punto del tempo. Questo crea una coerenza totale tra ciò che il compositore specifica, ciò che il sistema visualizza e ciò che l'orchestra Csound suona.
-\subsection{3.3 Un Caso di Studio: Il Sistema Gerarchico del Glissando}
+È importante notare che questo processo di interpolazione non solo guida la generazione degli eventi sonori, ma fornisce anche i dati per la visualizzazione grafica. Le \textit{maschere di tendenza} visibili nel PDF generato da \texttt{CompositionDebugger} sono la rappresentazione visiva diretta dei valori interpolati in ogni punto del tempo. Questo crea una coerenza totale tra ciò che il compositore specifica, ciò che il sistema visualizza e ciò che l'orchestra Csound suona.
+\subsection{Il Sistema Gerarchico del Glissando}
 Il glissando in Gamma non è una semplice transizione di frequenza, ma un sistema gerarchico che illustra l'approccio progettuale del compositore: fornire opzioni potenti con priorità chiare.
 
 \begin{enumerate}
@@ -99,5 +99,3 @@ Il glissando in Gamma non è una semplice transizione di frequenza, ma un sistem
     \item Default (Nessun Glissando) : In assenza di specifiche, la frequenza rimane statica.
 \end{enumerate}
 Questa gerarchia viene risolta in \texttt{\_generate\_params\_from\_mask()}, che calcola i parametri \texttt{ottava\_arrivo} e \texttt{registro\_arrivo} finali. Questi vengono poi passati a Csound, dove la funzione \texttt{calcFrequenza} è chiamata due volte, una per la frequenza di partenza e una per quella di arrivo, garantendo che entrambe rispettino la logica dell'intonazione pitagorica del sistema.
-
-In conclusione, l'architettura di generazione parametrica di Gamma è stratificata e flessibile. Separa nettamente la specifica compositiva (l'intenzione nel YAML) dall'implementazione tecnica (la logica di generazione e interpolazione in Python). Questo permette al compositore di operare al livello di astrazione più consono, che sia definire un pattern nota per nota o semplicemente tracciare una \textit{tendenza} evolutiva, lasciando al sistema il compito di tradurre questa intenzione in una texture sonora ricca e coerente.

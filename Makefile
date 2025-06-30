@@ -1,7 +1,7 @@
 # Makefile per compilare il documento LaTeX con XeLaTeX e BibTeX
 
 # Nome del file principale LaTeX (senza l'estensione .tex)
-FILENAME ?= main
+FILENAME ?= GRDM-CMI
 
 # Comandi per i tool
 LATEX = xelatex
@@ -15,6 +15,9 @@ all: $(FILENAME).pdf
 
 # Regola per compilare il documento LaTeX
 $(FILENAME).pdf: $(FILENAME).tex
+	$(LATEX) $(LATEX_OPTIONS) $(FILENAME).tex
+	$(BIBTEX) $(FILENAME)
+	$(LATEX) $(LATEX_OPTIONS) $(FILENAME).tex
 	$(LATEX) $(LATEX_OPTIONS) $(FILENAME).tex
 
 # Pulisce i file temporanei generati durante la compilazione

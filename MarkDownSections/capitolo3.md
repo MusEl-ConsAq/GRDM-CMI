@@ -1,5 +1,5 @@
 
-# Introduzione e Architettura Generale
+# INTRODUZIONE E ARCHITETTURA GENERALE
 
 Il `generative_composerYaml2.py` è un sistema di composizione algoritmica che traduce una descrizione astratta di una struttura musicale, definita in formato YAML, in un file audio (WAV). Lo fa generando uno score per il software di sintesi sonora Csound.
 
@@ -28,14 +28,11 @@ def load_all_compositions_from_yaml(file_path):
     composizioni = []
     try:
         with open(file_path, 'r') as f:
-            # safe_load_all restituisce un generatore, lo convertiamo in lista
             docs = list(yaml.safe_load_all(f))
-        # ... (gestione errori) ...
         for i, composition in enumerate(docs):
             if composition is None: continue 
             composizioni.append(composition)
         return composizioni
-    # ... (gestione eccezioni) ...
 ```
 
 Ogni documento YAML caricato rappresenta una "Parte" della composizione. Ogni parte è una lista di "Sezioni", e ogni sezione può contenere uno o più "Layer". Questa struttura gerarchica (Parte -> Sezione -> Layer -> Evento) è il modello concettuale su cui si basa tutta la logica successiva.
@@ -45,8 +42,6 @@ In aggiunta, viene caricato un file `tables.yaml` che definisce le caratteristic
 ## Il Nucleo Generativo: Dal Concetto ai Parametri
 
 Il cuore del sistema risiede nella classe `GenerativeComposer` e nella sua capacità di trasformare le "maschere" parametriche definite nel YAML in valori numerici concreti per ogni evento sonoro.
-
-### Struttura a Layer e `_process_layer`
 
 La generazione avviene all'interno di un "layer". Un layer può essere:
 -  **Statico**: Definito da uno `stato_unico`. Tutti gli eventi generati in questo layer attingeranno da un'unica maschera di parametri.

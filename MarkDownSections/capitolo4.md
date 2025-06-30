@@ -1,6 +1,6 @@
-# Dall'Intenzione alla Nota: Maschere di Tendenza e Generazione Parametrica 
+# DALL'INTENZIONE ALLA NOTA: MASCHERE DI TENDENZA E GENERAZIONE PARAMETRICA
 
-La generazione parametrica è il motore alchemico di Gamma, il processo centrale attraverso cui le intenzioni del compositore, espresse come  maschere di tendenza  nel file YAML, vengono trasformate in valori numerici concreti per ogni singolo evento sonoro. Se l'orchestra Csound è il corpo esecutore, i metodi analizzati in questo capitolo rappresentano il cervello decisionale che lo pilota. Analizzeremo come il sistema traduce l'astrazione in suono, con particolare attenzione alle tecniche di generazione, interpolazione e gestione della coerenza strutturale.
+La generazione parametrica è il motore alchemico di Gamma, il processo centrale attraverso cui le intenzioni del compositore, espresse come  maschere di tendenza  nel file YAML, vengono trasformate in valori numerici concreti per ogni singolo evento sonoro. Analizzeremo come il sistema traduce l'astrazione in suono, con particolare attenzione alle tecniche di generazione, interpolazione e gestione della coerenza strutturale.
 
 ## Il Motore Generativo: `_generate_params_from_mask()` 
 
@@ -21,7 +21,7 @@ SKIPPED_KEYS = {
 ```
 Questa separazione permette a un loop generico di gestire i parametri puramente numerici, mentre logiche dedicate si occupano di tradurre concetti come `'dinamica': 'f'` nell'indice numerico richiesto da Csound o di generare intere sequenze ritmiche da una categoria come `'medi'`.
 
-###  Le Modalità di Generazione: Un Toolkit Espressivo 
+###  Le Modalità di Generazione
 
 Il cuore del metodo itera sui parametri, applicando la modalità di generazione più appropriata in base alla struttura della maschera.
 
@@ -50,7 +50,7 @@ for key, p_mask in mask.items():
 Questo toolkit di quattro modalità offre al compositore un controllo granulare sul grado di determinismo e casualità:
 
 1.   Distribuzione Normale : Ideale per creare una "massa" sonora attorno a un centro tonale o timbrico. Un'ottava definita come `{mean: 5, std: 0.5}` tenderà a rimanere nell'ottava 5, ma con occasionali e naturali "fughe" verso le ottave vicine. La deviazione standard diventa un parametro espressivo che controlla la "disciplina" del materiale.
-2.   Range Uniforme : Utile quando tutti i valori in un intervallo sono ugualmente desiderabili. Un `range: [1, 10]` per il registro crea salti discreti, mentre un `range: [1.0, 10.0]` abilita micro-intervalli, mostrando come una scelta tecnica influenzi direttamente il risultato sonoro.
+2.   Range Uniforme `range: [1, 10]`: Utile quando tutti i valori in un intervallo sono ugualmente possibili.
 3.   Scelta Pesata : Permette di definire il "colore" statistico di una sezione. Una dinamica specificata come `{choices: ['p', 'mf', 'f'], weights: [0.6, 0.3, 0.1]}` assicura una predominanza di eventi piano, pur mantenendo la varietà.
 4.   Valore Fisso : Garantisce il determinismo assoluto, essenziale per parametri strutturali come il senso di movimento spaziale.
 
@@ -73,9 +73,9 @@ elif 'choices' in rhythm_mask:
 ```
 Questa architettura permette al compositore di scegliere il livello di dettaglio più consono: specificare un pattern esatto, scegliere da una libreria di pattern, o semplicemente indicare una "qualità" ritmica desiderata.
 
-##  3.2 L'Evoluzione nel Tempo: Interpolazione delle Maschere 
+##  L'Evoluzione nel Tempo: Interpolazione delle Maschere 
 
-Se la generazione da una singola maschera crea eventi statici, l'interpolazione tra due maschere (`stato_iniziale` e `stato_finale`) dà vita a processi dinamici e trasformativi. Il metodo `_interpolate_mask()` implementa questa logica con una particolare attenzione alla robustezza e alla coerenza musicale.
+Se la generazione da una singola maschera crea eventi statici, l'interpolazione tra due maschere (`stato_iniziale` e `stato_finale`) dà vita a processi dinamici e trasformativi. Il metodo `_interpolate_mask()` implementa questa logica.
 
 ###  Gestione delle Transizioni Asimmetriche 
 
@@ -100,9 +100,9 @@ L'interpolazione si adatta al tipo di parametro, producendo transizioni musicalm
 
 -    Scelte Discrete (Choices) : Il sistema tenta un  cross-fade probabilistico . Se le scelte sono le stesse, i loro pesi (`weights`) vengono interpolati. Questo rea una transizione graduale nella probabilità di occorrenza, ad esempio passando da una predominanza di dinamiche piano a una di forte. Se le scelte sono diverse, il sistema effettua una transizione a scalino a metà del percorso.
 
-È importante notare che questo processo di interpolazione non solo guida la generazione degli eventi sonori, ma fornisce anche i dati per la visualizzazione grafica. Le "buste di tendenza" visibili nel PDF generato da `CompositionDebugger` sono la rappresentazione visiva diretta dei valori interpolati in ogni punto del tempo. Questo crea una coerenza totale tra ciò che il compositore specifica, ciò che il sistema visualizza e ciò che l'orchestra Csound suona.
+È importante notare che questo processo di interpolazione non solo guida la generazione degli eventi sonori, ma fornisce anche i dati per la visualizzazione grafica. Le "maschere di tendenza" visibili nel PDF generato da `CompositionDebugger` sono la rappresentazione visiva diretta dei valori interpolati in ogni punto del tempo. Questo crea una coerenza totale tra ciò che il compositore specifica, ciò che il sistema visualizza e ciò che l'orchestra Csound suona.
 
-##  3.3 Un Caso di Studio: Il Sistema Gerarchico del Glissando 
+##  Il Sistema Gerarchico del Glissando 
 
 Il glissando in Gamma non è una semplice transizione di frequenza, ma un sistema gerarchico che illustra l'approccio progettuale del compositore: fornire opzioni potenti con priorità chiare.
 
@@ -113,5 +113,3 @@ Il glissando in Gamma non è una semplice transizione di frequenza, ma un sistem
 3.   Default (Nessun Glissando) : In assenza di specifiche, la frequenza rimane statica.
 
 Questa gerarchia viene risolta in `_generate_params_from_mask()`, che calcola i parametri `ottava_arrivo` e `registro_arrivo` finali. Questi vengono poi passati a Csound, dove la funzione `calcFrequenza` è chiamata due volte, una per la frequenza di partenza e una per quella di arrivo, garantendo che entrambe rispettino la logica dell'intonazione pitagorica del sistema.
-
-In conclusione, l'architettura di generazione parametrica di Gamma è stratificata e flessibile. Separa nettamente la specifica compositiva (l'intenzione nel YAML) dall'implementazione tecnica (la logica di generazione e interpolazione in Python). Questo permette al compositore di operare al livello di astrazione più consono, che sia definire un pattern nota per nota o semplicemente tracciare una "tendenza" evolutiva, lasciando al sistema il compito di tradurre questa intenzione in una texture sonora ricca e coerente.

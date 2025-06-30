@@ -1,4 +1,4 @@
-# Conclusione: Un Ecosistema per la Composizione
+# CONCLUSIONE
 
 L'analisi ha dimostrato come Gamma realizzi con successo il suo paradigma centrale: quello delle maschere di tendenza. Il compositore definisce i confini, le probabilità, le traiettorie, e il sistema esplora lo spazio creativo così delineato.
 

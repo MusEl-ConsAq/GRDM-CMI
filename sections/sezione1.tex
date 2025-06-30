@@ -1,7 +1,7 @@
 % --- Contenuto LaTeX autogenerato da capitolo1.md (sezione 2) ---
 
 \section{L'ORCHESTRA GAMMA}
-L'orchestra Csound di Gamma non è un sistema autonomo, ma il motore di sintesi e di esecuzione progettato specificamente per interpretare le strutture musicali complesse generate dallo script Python \texttt{generative\_composer.py}. Ogni strumento e opcode è stato creato per tradurre in suono un parametro o un comportamento definito nel file YAML di input. Lo strumento Voce funge da \textit{ponte} principale, ricevendo un intero \textit{comportamento} (un cluster di eventi) da Python e orchestrandone la micro-temporalità e la sintesi. In questo capitolo, analizzeremo come questa traduzione avviene, partendo dal livello macroscopico (Voce) fino al dettaglio del singolo campione audio (eventoSonoro).
+L'orchestra Csound di Gamma non è un sistema autonomo, ma il motore di sintesi e di esecuzione progettato specificamente per interpretare le strutture musicali complesse generate dallo script Python \texttt{generative\_composer.py}. Ogni strumento e opcode è stato creato per tradurre in suono un parametro o un comportamento definito nel file YAML di input. Lo strumento Voce funge da \textit{ponte} principale, ricevendo un intero \textit{comportamento} (un cluster di eventi) da Python e orchestrandone la micro-temporalità e la sintesi. In questo capitolo, analizzeremo come questa traduzione avviene, partendo dal livello macroscopico (Voce) fino al dettaglio del singolo evento (eventoSonoro).
 \subsection{Lo Strumento Voce: Generatore di Comportamenti}
 Lo strumento \texttt{Voce} costituisce il livello più alto della gerarchia di sintesi in Gamma. Non genera direttamente suoni, ma orchestra la creazione di sequenze di eventi sonori secondo logiche compositive complesse. La sua definizione inizia con una ricca parametrizzazione:
 
@@ -35,12 +35,12 @@ instr Voce
 Ogni parametro ha un significato musicale preciso:
 
 \begin{itemize}
-    \item \texttt{ i\_CAttacco}  e \texttt{i\_Durata}: definiscono la finestra temporale in cui il comportamento è attivo
-    \item \texttt{i\_RitmiTab}: punta a una tabella contenente la sequenza di valori ritmici che determinano sia la temporalità che le frequenze degli eventi
-    \item \texttt{i\_DurataArmonica}: il valore di riferimento per il calcolo delle durate reali degli eventi
-    \item \texttt{i\_Ottava} e \texttt{i\_Registro}: coordinate nello spazio delle altezze di partenza
-    \item \texttt{i\_ottava\_arrivo} e \texttt{i\_registro\_arrivo}: destinazione per eventuali glissandi
-    \item \texttt{i\_NonlinearMode}: seleziona l'algoritmo di generazione per nuovi ritmi
+ \item \texttt{ i\_CAttacco}  e \texttt{i\_Durata}: definiscono la finestra temporale in cui il comportamento è attivo
+ \item \texttt{i\_RitmiTab}: punta a una tabella contenente la sequenza di valori ritmici che determinano sia la temporalità che le frequenze degli eventi
+ \item \texttt{i\_DurataArmonica}: il valore di riferimento per il calcolo delle durate reali degli eventi
+ \item \texttt{i\_Ottava} e \texttt{i\_Registro}: coordinate nello spazio delle altezze di partenza
+ \item \texttt{i\_ottava\_arrivo} e \texttt{i\_registro\_arrivo}: destinazione per eventuali glissandi
+ \item \texttt{i\_NonlinearMode}: seleziona l'algoritmo di generazione per nuovi ritmi
 \end{itemize}
 \subsubsection{Gestione Adattiva della Durata e dei Confini di Sezione}
 Un aspetto cruciale per la coerenza musicale è la gestione degli eventi che superano i confini della loro sezione. Il parametro iSafetyBuffer attiva una logica di controllo fondamentale:
@@ -120,14 +120,14 @@ Il parametro \texttt{i\_RitmoCorrente} viene passato come \texttt{p7} allo strum
 \subsection{EventoSonoro: Dal Parametro al Suono}
 Lo strumento \texttt{eventoSonoro} è responsabile della generazione effettiva del suono. Riceve i parametri calcolati da Voce e li trasforma in segnale audio attraverso sintesi e processamento.
 \subsubsection{Sistema di Compensazione Isofonica dell'Ampiezza}
-Una delle caratteristiche più sofisticate di Gamma è l'implementazione di un sistema di calibrazione dell'ampiezza basato sulle curve isofoniche ISO 226:2003. Per comprendere l'importanza di questa implementazione, è necessario esaminare il fenomeno psicoacustico che la motiva.
+Una delle caratteristiche più sofisticate di Gamma è l'implementazione di un sistema di calibrazione dell'ampiezza basato sulle curve isofoniche dello standard ISO 226:2003\cite{ISO2262003}. Per comprendere l'importanza di questa implementazione, è necessario esaminare il fenomeno psicoacustico che la motiva.
 
 L'orecchio umano non percepisce tutte le frequenze con la stessa sensibilità. Un tono puro a 100 Hz deve avere un'intensità fisica significativamente maggiore di un tono a 3000 Hz per essere percepito con la stessa loudness. Le curve isofoniche mappano questa non-linearità percettiva, mostrando quali livelli di pressione sonora (SPL) sono necessari a diverse frequenze per produrre la stessa sensazione di loudness.
 
 Lo standard ISO 226:2003 rappresenta la revisione più recente di queste curve, basata su estesi studi psicoacustici internazionali. Ogni curva rappresenta un livello di loudness costante misurato in phon, dove per definizione:
 \begin{itemize}
-    \item A 1000 Hz, il livello in phon equivale al livello in dB SPL
-    \item A tutte le altre frequenze, il livello in dB SPL necessario varia secondo la curva
+ \item A 1000 Hz, il livello in phon equivale al livello in dB SPL
+ \item A tutte le altre frequenze, il livello in dB SPL necessario varia secondo la curva
 \end{itemize}
 
 Il sistema utilizza tre tabelle fondamentali derivate dallo standard ISO:
@@ -141,9 +141,9 @@ giTf       ftgen 0, 0, 32, -2, 78.5, 68.7, 59.5, 51.1, 44.0, 37.5, 31.5, 26.5, 2
 
 Questi parametri rappresentano:
 \begin{itemize}
-    \item \textbf{giAf}: Esponente di loudness, determina la pendenza della funzione di trasferimento
-    \item \textbf{giLu}: Livello di loudness alla soglia, rappresenta la correzione per la soglia uditiva
-    \item \textbf{giTf}: Soglia uditiva in campo libero, il livello minimo udibile in condizioni ideali
+ \item \textbf{giAf}: Esponente di loudness, determina la pendenza della funzione di trasferimento
+ \item \textbf{giLu}: Livello di loudness alla soglia, rappresenta la correzione per la soglia uditiva
+ \item \textbf{giTf}: Soglia uditiva in campo libero, il livello minimo udibile in condizioni ideali
 \end{itemize}
 
 Il calcolo dell'ampiezza compensata avviene in più fasi:
@@ -216,8 +216,8 @@ endop
 
 La formula si divide in due termini:
 \begin{itemize}
-    \item \textbf{iterm1}: Rappresenta la componente lineare della loudness, dominante a livelli alti
-    \item \textbf{iterm2}: Cattura la non-linearità vicino alla soglia uditiva
+ \item \textbf{iterm1}: Rappresenta la componente lineare della loudness, dominante a livelli alti
+ \item \textbf{iterm2}: Cattura la non-linearità vicino alla soglia uditiva
 \end{itemize}
 
 Il caso speciale \texttt{if iaf\_value <= 0} gestisce situazioni vicine o sotto la soglia uditiva, dove la formula principale potrebbe produrre valori matematicamente indefiniti.
@@ -260,9 +260,9 @@ iradi = (iwhichZero > 0 ? (iwhichZero - 1) * iPeriod : 0)
 
 Il parametro \texttt{iHR} (Harmonic Ratio) determina in quanti \textit{spicchi} viene suddivisa la circonferenza. Ad esempio:
 \begin{itemize}
-    \item \texttt{iHR = 1}: un solo periodo, movimento completo 0-360°
-    \item \texttt{iHR = 4}: quattro periodi, la circonferenza è divisa in quadranti
-    \item \texttt{iHR = 7}: sette spicchi, creando una suddivisione asimmetrica
+ \item \texttt{iHR = 1}: un solo periodo, movimento completo 0-360°
+ \item \texttt{iHR = 4}: quattro periodi, la circonferenza è divisa in quadranti
+ \item \texttt{iHR = 7}: sette spicchi, creando una suddivisione asimmetrica
 \end{itemize}
 
 Il parametro \texttt{iwhichZero} determina da quale zero della funzione trigonometrica iniziare il movimento:
@@ -288,9 +288,9 @@ endif
 
 La formula \texttt{abs(sin(krad * iHR / 2))} genera curve polari modificate. Questa trasformazione:
 \begin{itemize}
-    \item Prende il valore assoluto, creando lobi sempre positivi
-    \item Moltiplica per \texttt{iHR / 2}, dimezzando il numero di lobi rispetto agli spicchi spaziali
-    \item Crea una correlazione diretta tra movimento spaziale e ampiezza
+ \item Prende il valore assoluto, creando lobi sempre positivi
+ \item Moltiplica per \texttt{iHR / 2}, dimezzando il numero di lobi rispetto agli spicchi spaziali
+ \item Crea una correlazione diretta tra movimento spaziale e ampiezza
 \end{itemize}
 
 Per comprendere meglio, consideriamo il codice Python fornito che visualizza queste funzioni:
@@ -343,7 +343,7 @@ asigEnv dcblock asigEnvPre
 
 L'inviluppo di sezione permette modulazioni globali su tutti gli eventi di una sezione, mentre l'inviluppo locale (potenzialmente derivato dalle armoniche spaziali) definisce la forma del singolo evento.
 \subsection{Il Sistema di Intonazione Pitagorica}
-Il sistema di altezze in Gamma si basa su una implementazione personalizzata dell'intonazione pitagorica, gestita dall'opcode \texttt{GenPythagFreqs}:
+Il sistema di altezze in Gamma si basa su una implementazione personalizzata dell'intonazione pitagorica studiata sugli scritti di Walter Branchi \cite{Branchi1987}, gestita dall'opcode \texttt{GenPythagFreqs}:
 
 \begin{lstlisting}[language=C]
 opcode GenPythagFreqs, i, iiii
@@ -375,9 +375,9 @@ while iOctave < iNumOctaves do
 
 Il sistema genera una tabella bidimensionale concettuale dove:
 \begin{itemize}
-    \item Ogni ottava contiene \texttt{iNumIntervals} frequenze (200 nel nostro caso)
-    \item Le frequenze sono generate attraverso iterazioni della quinta perfetta (3/2)
-    \item Ogni quinta che supera l'ottava viene riportata all'interno tramite divisione per 2
+ \item Ogni ottava contiene \texttt{iNumIntervals} frequenze (200 nel nostro caso)
+ \item Le frequenze sono generate attraverso iterazioni della quinta perfetta (3/2)
+ \item Ogni quinta che supera l'ottava viene riportata all'interno tramite divisione per 2
 \end{itemize}
 
 Dopo la generazione, le frequenze vengono ordinate all'interno di ogni ottava:
@@ -422,22 +422,20 @@ endop
 La formula di indicizzazione \texttt{i\_OffsetIntervallo + i\_RitmoCorrente} crea una relazione diretta tra il valore ritmico e l'altezza selezionata. Questo significa che:
 
 \begin{itemize}
-    \item Ritmi identici in registri diversi producono intervalli correlati
-    \item La sequenza ritmica diventa una sequenza melodica
-    \item Valori ritmici alti tendono verso frequenze più acute all'interno del registro
+ \item Ritmi identici in registri diversi producono intervalli correlati
+ \item La sequenza ritmica diventa una sequenza melodica
+ \item Valori ritmici alti tendono verso frequenze più acute all'interno del registro
 \end{itemize}
 \subsubsection{Implicazioni Compositive}
-Questa architettura crea una profonda interconnessione tra dimensione temporale, frequenziale e spaziale. Un pattern ritmico [3, 5, 8, 13] non solo definisce:
+Questa architettura crea una profonda interconnessione tra dimensione temporale, frequenziale e spaziale. Un pattern ritmico [3, 5, 8, 13] definisce:
 \begin{itemize}
-    \item Le durate primarie relative degli eventi (durataArmonica/3, durataArmonica/5, etc.) ( primarie poiché trasfigurate successivamente da un moltiplicatore di durata).
-    \item Le altezze selezionate dalla tabella pitagorica
-    \item Il numero di suddivisioni spaziali e il pattern di movimento stereofonico
-    \item La forma dell'inviluppo di ampiezza quando si usano le armoniche spaziali
+ \item Le durate primarie relative degli eventi (durataArmonica/3, durataArmonica/5, etc.) ( primarie poiché trasfigurate successivamente da un moltiplicatore di durata).
+ \item Le altezze selezionate dalla tabella pitagorica
+ \item Il numero di suddivisioni spaziali e il pattern di movimento stereofonico
+ \item La forma dell'inviluppo di ampiezza quando si usano le armoniche spaziali
 \end{itemize}
 
-L'uso dell'intonazione pitagorica invece del temperamento equabile aggiunge ulteriore ricchezza armonica: le quinte sono pure (rapporto 3:2), ma questo genera comma pitagorici e intervalli microtonali che colorano il risultato sonoro con battimenti e risonanze particolari.
-
-La gerarchia Voce → eventoSonoro, supportata dal sistema di intonazione pitagorica, dalle tecniche di compensazione isofonica e dal sistema di armoniche spaziali, fornisce al compositore uno strumento di straordinaria flessibilità espressiva, capace di generare texture complesse da specifiche relativamente semplici.
+L'uso dell'intonazione pitagorica invece del temperamento equabile aggiunge ulteriore ricchezza armonica: le quinte sono pure (rapporto 3:2), ma questo genera comma pitagorici e intervalli microtonali che colorano il risultato con battimenti multipli di difficile prevedibilità.
 \subsection{NonlinearFunc: Il Generatore di Ritmi Caotici}
 L'opcode \texttt{NonlinearFunc} rappresenta un sistema per la generazione di sequenze ritmiche che evolvono nel tempo secondo principi deterministici, periodici o caotici. Questo UDO (User Defined Opcode) estende le possibilità compositive oltre i pattern ritmici predefiniti, permettendo l'esplorazione di territori ritmici emergenti.
 \subsubsection{Struttura e Parametri dell'Opcode}
@@ -458,13 +456,13 @@ iPI = 4 * taninv(1.0)
 
 L'opcode accetta quattro parametri:
 \begin{itemize}
-    \item \texttt{iX}: Il valore di input, tipicamente il ritmo precedente nella sequenza
-    \item \texttt{iMode}: Selettore della modalità operativa (0-3)
-    \item \texttt{iMinVal}: Valore minimo del range di output (default: 1)
-    \item \texttt{iMaxVal}: Valore massimo del range di output (default: 35)
+ \item \texttt{iX}: Il valore di input, tipicamente il ritmo precedente nella sequenza
+ \item \texttt{iMode}: Selettore della modalità operativa (0-3)
+ \item \texttt{iMinVal}: Valore minimo del range di output (default: 1)
+ \item \texttt{iMaxVal}: Valore massimo del range di output (default: 35)
 \end{itemize}
 
-La prima operazione importante è la normalizzazione e limitazione dei valori di input per garantire stabilità numerica. Il valore di iX viene limitato tra 1 e 100 per evitare overflow o comportamenti indefiniti nelle funzioni matematiche successive.
+La prima operazione importante è la normalizzazione e limitazione dei valori di input per garantire stabilità numerica. Il valore di \texttt{iX} viene limitato tra 1 e 100 per evitare overflow o comportamenti indefiniti nelle funzioni matematiche successive.
 \subsubsection{Modalità 0: Convergente}
 \begin{lstlisting}[language=C]
 if iMode == 0 then
@@ -477,9 +475,9 @@ Questa modalità implementa una variante della mappa logistica con comportamento
 
 La formula \texttt{iR * iX * (1 {-} iX/40)} differisce dalla classica mappa logistica \texttt{r * x * (1 {-} x)} per il fattore di scala 40. Questo adattamento:
 \begin{itemize}
-    \item Permette di lavorare con valori di input nell'intervallo 1-100 invece di 0-1
-    \item Rallenta la convergenza, rendendo l'evoluzione ritmica più graduale
-    \item Crea una traiettoria prevedibile verso un valore stabile
+ \item Permette di lavorare con valori di input nell'intervallo 1-100 invece di 0-1
+ \item Rallenta la convergenza, rendendo l'evoluzione ritmica più graduale
+ \item Crea una traiettoria prevedibile verso un valore stabile
 \end{itemize}
 
 Matematicamente, per \texttt{iR = 2.8}, il sistema convergerà verso il punto fisso:
@@ -501,23 +499,23 @@ La modalità periodica utilizza l'interferenza di due funzioni trigonometriche c
 
 L'analisi matematica rivela:
 \begin{itemize}
-    \item \texttt{sin(iX * \textbackslash\{\}texttt\{\{\$\textbackslash\{\}pi\$/18)}: periodo di 36 unità
-    \item \texttt{cos(iX * \textbackslash\{\}texttt\{\{\$\textbackslash\{\}pi\$/10)}: periodo di 20 unità
-    \item Il minimo comune multiplo è 180, creando un super-periodo
+ \item \texttt{sin(iX * pi/18)}: periodo di 36 unità
+ \item \texttt{cos(iX * pi/10)}: periodo di 20 unità
+ \item Il minimo comune multiplo è 180, creando un super-periodo
 \end{itemize}
 
 Il prodotto \texttt{iP1 * iP2} genera un'interferenza costruttiva e distruttiva tra le due onde:
 \begin{itemize}
-    \item Quando entrambe le funzioni sono vicine ai loro massimi/minimi, il prodotto è grande
-    \item Quando una è vicina a zero, il prodotto si annulla
-    \item Il valore assoluto garantisce output positivi
+ \item Quando entrambe le funzioni sono vicine ai loro massimi/minimi, il prodotto è grande
+ \item Quando una è vicina a zero, il prodotto si annulla
+ \item Il valore assoluto garantisce output positivi
 \end{itemize}
 
 La trasformazione finale \texttt{abs(iP1 * iP2) * 20 + 10}:
 \begin{itemize}
-    \item Scala il range da [0, 1] a [0, 20]
-    \item Aggiunge un offset di 10, risultando in valori tra 10 e 30
-    \item Garantisce che i ritmi generati rimangano in un range musicalmente utile
+ \item Scala il range da [0, 1] a [0, 20]
+ \item Aggiunge un offset di 10, risultando in valori tra 10 e 30
+ \item Garantisce che i ritmi generati rimangano in un range musicalmente utile
 \end{itemize}
 
 Questa modalità produce sequenze che si ripetono dopo 180 iterazioni ma con una struttura interna ricca di variazioni locali.
@@ -539,23 +537,23 @@ Questa modalità implementa la mappa logistica nella sua regione caotica con l'a
 
 Il parametro \texttt{iR = 3.99} posiziona il sistema al limite del caos:
 \begin{itemize}
-    \item Per r > 3.57, la mappa logistica entra nel regime caotico
-    \item A r = 3.99, siamo nella regione di caos sviluppato
-    \item Piccole variazioni nell'input producono grandi divergenze nell'output
+ \item Per r > 3.57, la mappa logistica entra nel regime caotico
+ \item A r = 3.99, siamo nella regione di caos sviluppato
+ \item Piccole variazioni nell'input producono grandi divergenze nell'output
 \end{itemize}
 
 Il processo di normalizzazione \texttt{(iX \% 100) / 100}:
 \begin{itemize}
-    \item Utilizza l'operatore modulo per mantenere i valori ciclici
-    \item Normalizza nell'intervallo [0, 1] richiesto dalla mappa logistica
-    \item Il limite \texttt{[0.01, 0.99]} evita i punti fissi instabili a 0 e 1
+ \item Utilizza l'operatore modulo per mantenere i valori ciclici
+ \item Normalizza nell'intervallo [0, 1] richiesto dalla mappa logistica
+ \item Il limite \texttt{[0.01, 0.99]} evita i punti fissi instabili a 0 e 1
 \end{itemize}
 
 L'aggiunta di rumore \texttt{random:i({-}0.05, 0.05)}:
 \begin{itemize}
-    \item Introduce una componente stocastica del 5\%
-    \item Previene cicli perfetti che potrebbero emergere anche nel caos deterministico
-    \item Simula le imperfezioni del mondo reale
+ \item Introduce una componente stocastica del 5\%
+ \item Previene cicli perfetti che potrebbero emergere anche nel caos deterministico
+ \item Simula le imperfezioni del mondo reale
 \end{itemize}
 \subsubsection{Modalità 3: Caos Vero (Default)}
 \begin{lstlisting}[language=C]
@@ -575,18 +573,18 @@ La modalità \textit{Caos Vero} rappresenta l'approccio più interessante, combi
 
 La generazione dei seed utilizza moltiplicatori irrazionali approssimati:
 \begin{itemize}
-    \item 1.3 $\approx$ √1.69 
-    \item 0.7 $\approx$ 1/√2
-    \item 2.5 $\approx$ √6.25
+ \item 1.3 $\approx$ √1.69 
+ \item 0.7 $\approx$ 1/√2
+ \item 2.5 $\approx$ √6.25
 \end{itemize}
 
 Questi valori garantiscono che i tre seed evolvano a velocità diverse e incommensurabili, massimizzando la complessità dell'output.
 
 Le tre funzioni non lineari utilizzano:
 \begin{itemize}
-    \item \texttt{sin} con accoppiamento additivo: sensibile alle fasi relative
-    \item \texttt{cos} con accoppiamento additivo: sfasato di $\pi$/2 rispetto a sin
-    \item \texttt{tan} con modulo: introduce discontinuità controllate
+ \item \texttt{sin} con accoppiamento additivo: sensibile alle fasi relative
+ \item \texttt{cos} con accoppiamento additivo: sfasato di $\pi$/2 rispetto a sin
+ \item \texttt{tan} con modulo: introduce discontinuità controllate
 \end{itemize}
 
 \begin{lstlisting}[language=C]
@@ -600,9 +598,9 @@ Le tre funzioni non lineari utilizzano:
 
 Il bilanciamento 60/40 tra deterministico e stocastico è calibrato per:
 \begin{itemize}
-    \item Mantenere una struttura riconoscibile (componente deterministica)
-    \item Introdurre sufficiente imprevedibilità (componente random)
-    \item Evitare sia la monotonia che il rumore bianco
+ \item Mantenere una struttura riconoscibile (componente deterministica)
+ \item Introdurre sufficiente imprevedibilità (componente random)
+ \item Evitare sia la monotonia che il rumore bianco
 \end{itemize}
 
 \begin{lstlisting}[language=C]
@@ -619,9 +617,9 @@ Il bilanciamento 60/40 tra deterministico e stocastico è calibrato per:
 
 La perturbazione periodica ogni 7 iterazioni:
 \begin{itemize}
-    \item Introduce eventi rari ma significativi
-    \item Il numero 7 (primo) evita risonanze con altri periodi nel sistema
-    \item L'ampiezza ±30\% può causare salti drammatici nel ritmo
+ \item Introduce eventi rari ma significativi
+ \item Il numero 7 (primo) evita risonanze con altri periodi nel sistema
+ \item L'ampiezza ±30\% può causare salti drammatici nel ritmo
 \end{itemize}
 \subsubsection{Integrazione con il Sistema Gamma}
 Nel contesto dello strumento Voce, NonlinearFunc viene chiamato quando la tabella dei ritmi predefiniti si esaurisce:
@@ -637,7 +635,8 @@ Questo crea una transizione fluida da:
 \end{enumerate}
 L'output di NonlinearFunc influenza direttamente:
 \begin{itemize}
-    \item \textbf{Temporalità}: Attraverso la formula \texttt{i\_DurataArmonica / i\_RitmoCorrente}
-    \item \textbf{Altezza}: Il ritmo viene usato come indice nella tabella delle frequenze
-    \item \textbf{Spazializzazione}: Determina il parametro iHR per le armoniche spaziali
+ \item \textbf{Temporalità}: Attraverso la formula \texttt{i\_DurataArmonica / i\_RitmoCorrente}
+ \item \textbf{Altezza}: Il ritmo viene usato come indice nella tabella delle frequenze
+ \item \textbf{Spazializzazione}: Determina il parametro iHR per le armoniche spaziali
 \end{itemize}
+

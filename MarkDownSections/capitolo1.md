@@ -1,6 +1,6 @@
 # L'ORCHESTRA GAMMA 
 
-L'orchestra Csound di Gamma non è un sistema autonomo, ma il motore di sintesi e di esecuzione progettato specificamente per interpretare le strutture musicali complesse generate dallo script Python `generative_composer.py`. Ogni strumento e opcode è stato creato per tradurre in suono un parametro o un comportamento definito nel file YAML di input. Lo strumento Voce funge da "ponte" principale, ricevendo un intero "comportamento" (un cluster di eventi) da Python e orchestrandone la micro-temporalità e la sintesi. In questo capitolo, analizzeremo come questa traduzione avviene, partendo dal livello macroscopico (Voce) fino al dettaglio del singolo campione audio (eventoSonoro).
+L'orchestra Csound di Gamma non è un sistema autonomo, ma il motore di sintesi e di esecuzione progettato specificamente per interpretare le strutture musicali complesse generate dallo script Python `generative_composer.py`. Ogni strumento e opcode è stato creato per tradurre in suono un parametro o un comportamento definito nel file YAML di input. Lo strumento Voce funge da "ponte" principale, ricevendo un intero "comportamento" (un cluster di eventi) da Python e orchestrandone la micro-temporalità e la sintesi. In questo capitolo, analizzeremo come questa traduzione avviene, partendo dal livello macroscopico (Voce) fino al dettaglio del singolo evento (eventoSonoro).
 
 ## Lo Strumento Voce: Generatore di Comportamenti
 
@@ -133,7 +133,7 @@ Lo strumento `eventoSonoro` è responsabile della generazione effettiva del suon
 
 ### Sistema di Compensazione Isofonica dell'Ampiezza
 
-Una delle caratteristiche più sofisticate di Gamma è l'implementazione di un sistema di calibrazione dell'ampiezza basato sulle curve isofoniche ISO 226:2003. Per comprendere l'importanza di questa implementazione, è necessario esaminare il fenomeno psicoacustico che la motiva.
+Una delle caratteristiche più sofisticate di Gamma è l'implementazione di un sistema di calibrazione dell'ampiezza basato sulle curve isofoniche dello standard ISO 226:2003[^1]. Per comprendere l'importanza di questa implementazione, è necessario esaminare il fenomeno psicoacustico che la motiva.
 
 L'orecchio umano non percepisce tutte le frequenze con la stessa sensibilità. Un tono puro a 100 Hz deve avere un'intensità fisica significativamente maggiore di un tono a 3000 Hz per essere percepito con la stessa loudness. Le curve isofoniche mappano questa non-linearità percettiva, mostrando quali livelli di pressione sonora (SPL) sono necessari a diverse frequenze per produrre la stessa sensazione di loudness.
 
@@ -353,7 +353,7 @@ L'inviluppo di sezione permette modulazioni globali su tutti gli eventi di una s
 
 ## Il Sistema di Intonazione Pitagorica
 
-Il sistema di altezze in Gamma si basa su una implementazione personalizzata dell'intonazione pitagorica, gestita dall'opcode `GenPythagFreqs`:
+Il sistema di altezze in Gamma si basa su una implementazione personalizzata dell'intonazione pitagorica studiata sugli scritti di Walter Branchi [^2], gestita dall'opcode `GenPythagFreqs`:
 
 ```csound
 opcode GenPythagFreqs, i, iiii
@@ -437,15 +437,13 @@ La formula di indicizzazione `i_OffsetIntervallo + i_RitmoCorrente` crea una rel
 
 ### Implicazioni Compositive
 
-Questa architettura crea una profonda interconnessione tra dimensione temporale, frequenziale e spaziale. Un pattern ritmico [3, 5, 8, 13] non solo definisce:
+Questa architettura crea una profonda interconnessione tra dimensione temporale, frequenziale e spaziale. Un pattern ritmico [3, 5, 8, 13] definisce:
 - Le durate primarie relative degli eventi (durataArmonica/3, durataArmonica/5, etc.) ( primarie poiché trasfigurate successivamente da un moltiplicatore di durata).
 - Le altezze selezionate dalla tabella pitagorica
 - Il numero di suddivisioni spaziali e il pattern di movimento stereofonico
 - La forma dell'inviluppo di ampiezza quando si usano le armoniche spaziali
 
-L'uso dell'intonazione pitagorica invece del temperamento equabile aggiunge ulteriore ricchezza armonica: le quinte sono pure (rapporto 3:2), ma questo genera comma pitagorici e intervalli microtonali che colorano il risultato sonoro con battimenti e risonanze particolari.
-
- La gerarchia Voce → eventoSonoro, supportata dal sistema di intonazione pitagorica, dalle tecniche di compensazione isofonica e dal sistema di armoniche spaziali, fornisce al compositore uno strumento di straordinaria flessibilità espressiva, capace di generare texture complesse da specifiche relativamente semplici.
+L'uso dell'intonazione pitagorica invece del temperamento equabile aggiunge ulteriore ricchezza armonica: le quinte sono pure (rapporto 3:2), ma questo genera comma pitagorici e intervalli microtonali che colorano il risultato con battimenti multipli di difficile prevedibilità.
 
 ## NonlinearFunc: Il Generatore di Ritmi Caotici
 
@@ -474,7 +472,7 @@ L'opcode accetta quattro parametri:
 - `iMinVal`: Valore minimo del range di output (default: 1)
 - `iMaxVal`: Valore massimo del range di output (default: 35)
 
-La prima operazione importante è la normalizzazione e limitazione dei valori di input per garantire stabilità numerica. Il valore di iX viene limitato tra 1 e 100 per evitare overflow o comportamenti indefiniti nelle funzioni matematiche successive.
+La prima operazione importante è la normalizzazione e limitazione dei valori di input per garantire stabilità numerica. Il valore di `iX` viene limitato tra 1 e 100 per evitare overflow o comportamenti indefiniti nelle funzioni matematiche successive.
 
 ### Modalità 0: Convergente
 
@@ -512,8 +510,8 @@ elseif iMode == 1 then
 La modalità periodica utilizza l'interferenza di due funzioni trigonometriche con periodi incommensurabili per generare pattern complessi ma deterministici.
 
 L'analisi matematica rivela:
-- `sin(iX * π/18)`: periodo di 36 unità
-- `cos(iX * π/10)`: periodo di 20 unità
+- `sin(iX * pi/18)`: periodo di 36 unità
+- `cos(iX * pi/10)`: periodo di 20 unità
 - Il minimo comune multiplo è 180, creando un super-periodo
 
 Il prodotto `iP1 * iP2` genera un'interferenza costruttiva e distruttiva tra le due onde:
@@ -637,3 +635,7 @@ L'output di NonlinearFunc influenza direttamente:
 - **Altezza**: Il ritmo viene usato come indice nella tabella delle frequenze
 - **Spazializzazione**: Determina il parametro iHR per le armoniche spaziali
 
+
+[^1]: International Organization for Standardization, "Acoustics -- Normal equal-loudness-level contours," ISO 226:2003, Geneva, Switzerland, Aug. 2003.
+
+[^2]: W. Branchi, I numeri della musica. Roma, Italy: Edipan, 1987.

@@ -1,6 +1,6 @@
 % --- Contenuto LaTeX autogenerato da capitolo3.md (sezione 4) ---
 
-\section{Introduzione e Architettura Generale}
+\section{INTRODUZIONE E ARCHITETTURA GENERALE}
 Il \texttt{generative\_composerYaml2.py} è un sistema di composizione algoritmica che traduce una descrizione astratta di una struttura musicale, definita in formato YAML, in un file audio (WAV). Lo fa generando uno score per il software di sintesi sonora Csound.
 
 L'architettura del programma è basata su tre componenti principali e un'esecuzione a fasi:
@@ -27,14 +27,11 @@ def load_all_compositions_from_yaml(file_path):
     composizioni = []
     try:
         with open(file_path, 'r') as f:
-\section{safe_load_all restituisce un generatore, lo convertiamo in lista}
             docs = list(yaml.safe_load_all(f))
-\section{... (gestione errori) ...}
         for i, composition in enumerate(docs):
             if composition is None: continue 
             composizioni.append(composition)
         return composizioni
-\section{... (gestione eccezioni) ...}
 \end{lstlisting}
 
 Ogni documento YAML caricato rappresenta una \textit{Parte} della composizione. Ogni parte è una lista di \textit{Sezioni}, e ogni sezione può contenere uno o più \textit{Layer}. Questa struttura gerarchica (Parte -> Sezione -> Layer -> Evento) è il modello concettuale su cui si basa tutta la logica successiva.
@@ -42,11 +39,11 @@ Ogni documento YAML caricato rappresenta una \textit{Parte} della composizione. 
 In aggiunta, viene caricato un file \texttt{tables.yaml} che definisce le caratteristiche degli inviluppi (es. attacco, rilascio) che verranno usati da Csound.
 \subsection{Il Nucleo Generativo: Dal Concetto ai Parametri}
 Il cuore del sistema risiede nella classe \texttt{GenerativeComposer} e nella sua capacità di trasformare le \textit{maschere} parametriche definite nel YAML in valori numerici concreti per ogni evento sonoro.
-\subsubsection{Struttura a Layer e \texttt{\_process\_layer}}
+
 La generazione avviene all'interno di un \textit{layer}. Un layer può essere:
 \begin{itemize}
-    \item \textbf{Statico}: Definito da uno \texttt{stato\_unico}. Tutti gli eventi generati in questo layer attingeranno da un'unica maschera di parametri.
-    \item \textbf{Dinamico}: Definito da uno \texttt{stato\_iniziale} e uno \texttt{stato\_finale}. I parametri degli eventi evolvono nel tempo, interpolando tra queste due maschere.
+ \item \textbf{Statico}: Definito da uno \texttt{stato\_unico}. Tutti gli eventi generati in questo layer attingeranno da un'unica maschera di parametri.
+ \item \textbf{Dinamico}: Definito da uno \texttt{stato\_iniziale} e uno \texttt{stato\_finale}. I parametri degli eventi evolvono nel tempo, interpolando tra queste due maschere.
 \end{itemize}
 
 La funzione \texttt{\_process\_layer} gestisce un singolo layer. I suoi passaggi chiave sono:
@@ -59,7 +56,7 @@ La funzione \texttt{\_process\_layer} gestisce un singolo layer. I suoi passaggi
 Questa funzione è il motore stocastico. Prende una \textit{maschera} (un dizionario che descrive un parametro) e produce un valore numerico. Supporta diversi tipi di generazione:
 
 \begin{itemize}
-    \item \textbf{Distribuzione Uniforme}: Se la maschera contiene una chiave \texttt{range}.
+ \item \textbf{Distribuzione Uniforme}: Se la maschera contiene una chiave \texttt{range}.
 \end{itemize}
 
 \begin{lstlisting}[language=Python]
@@ -69,7 +66,7 @@ elif 'range' in p_mask:
     val = random.uniform(min_val, max_val)
 \end{lstlisting}
 \begin{itemize}
-    \item \textbf{Distribuzione Normale}: Se la maschera contiene \texttt{mean} e \texttt{std}.
+ \item \textbf{Distribuzione Normale}: Se la maschera contiene \texttt{mean} e \texttt{std}.
 \end{itemize}
 
 \begin{lstlisting}[language=Python]
@@ -79,7 +76,7 @@ if 'mean' in p_mask and 'std' in p_mask:
     val = np.random.normal(loc=mean, scale=std)
 \end{lstlisting}
 \begin{itemize}
-    \item \textbf{Scelta Pesata}: Se la maschera contiene \texttt{choices} ed opzionalmente \texttt{weights}.
+ \item \textbf{Scelta Pesata}: Se la maschera contiene \texttt{choices} ed opzionalmente \texttt{weights}.
 \end{itemize}
 
 \begin{lstlisting}[language=Python]
@@ -91,8 +88,8 @@ Questa logica viene applicata a tutti i parametri (altezza, durata, etc.), rende
 \subsubsection{Interpolazione dei Parametri (\texttt{\_interpolate\_mask})}
 Per i layer dinamici, questa funzione calcola una maschera intermedia tra \texttt{start\_mask} e \texttt{end\_mask} in base a un valore di \texttt{progress} (da 0 a 1). L'interpolazione è intelligente e si adatta al tipo di parametro:
 \begin{itemize}
-    \item I parametri numerici (come \texttt{mean}, \texttt{std}, \texttt{range}) vengono interpolati linearmente.
-    \item I parametri basati su scelte (\texttt{choices}) subiscono un *cross-fade* dei loro pesi (\texttt{weights}), creando una transizione probabilistica graduale da un set di scelte a un altro.
+ \item I parametri numerici (come \texttt{mean}, \texttt{std}, \texttt{range}) vengono interpolati linearmente.
+ \item I parametri basati su scelte (\texttt{choices}) subiscono un *cross-fade* dei loro pesi (\texttt{weights}), creando una transizione probabilistica graduale da un set di scelte a un altro.
 \end{itemize}
 
 \begin{lstlisting}[language=Python]
@@ -124,9 +121,9 @@ L'approccio del compositore al rendering è granulare e mira a ottimizzare i tem
 \subsubsection{Fase 1: \texttt{plan\_render\_jobs}}
 Questa funzione analizza l'intera struttura della partitura e crea un \textit{piano di lavoro}. Non esegue alcun rendering, ma definisce *cosa-deve essere renderizzato. Per ogni layer che necessita di rendering, crea un \textit{job}, ovvero un dizionario contenente:
 \begin{itemize}
-    \item La definizione del layer e della sezione a cui appartiene.
-    \item I percorsi per i file \texttt{.csd} e \texttt{.wav} di output per quel singolo layer.
-    \item Il tempo di inizio assoluto della sezione, calcolato tenendo conto del parametro \texttt{offset\_inizio}.
+ \item La definizione del layer e della sezione a cui appartiene.
+ \item I percorsi per i file \texttt{.csd} e \texttt{.wav} di output per quel singolo layer.
+ \item Il tempo di inizio assoluto della sezione, calcolato tenendo conto del parametro \texttt{offset\_inizio}.
 \end{itemize}
 \subsubsection{Fase 2: \texttt{execute\_layer\_rendering\_and\_collect\_data}}
 Questa fase esegue i \textit{job} di rendering dei layer.
@@ -157,9 +154,9 @@ Questo approccio a \textit{render per layer, poi assembla} ha il vantaggio di es
 Il \texttt{generative\_composerYaml2.py} implementa un flusso di lavoro completo e disaccoppiato per la composizione algoritmica. Le sue caratteristiche tecniche salienti sono:
 
 \begin{itemize}
-    \item \textbf{Configurazione Esterna (YAML)}: Offre un'interfaccia di alto livello per la descrizione musicale, separando la logica del codice dai dati della composizione.
-    \item \textbf{Generazione Stocastica Multi-modello}: Fornisce un set flessibile di strumenti per definire il comportamento dei parametri sonori.
-    \item \textbf{Rendering Granulare e a Fasi}: Scompone il problema del rendering in sotto-problemi più piccoli (layer, sezioni), ottimizzando il processo di lavoro iterativo.
-    \item \textbf{Caching della Visualizzazione}: Garantisce che il feedback visivo sia sempre coerente e completo, anche quando si lavora solo su parti della composizione.
-    \item \textbf{Assemblaggio Gerarchico}: Utilizza Csound non solo per la sintesi ma anche come uno strumento di montaggio audio per assemblare i componenti finali.
+ \item \textbf{Configurazione Esterna (YAML)}: Offre un'interfaccia di alto livello per la descrizione musicale, separando la logica del codice dai dati della composizione.
+ \item \textbf{Generazione Stocastica Multi-modello}: Fornisce un set flessibile di strumenti per definire il comportamento dei parametri sonori.
+ \item \textbf{Rendering Granulare e a Fasi}: Scompone il problema del rendering in sotto-problemi più piccoli (layer, sezioni), ottimizzando il processo di lavoro iterativo.
+ \item \textbf{Caching della Visualizzazione}: Garantisce che il feedback visivo sia sempre coerente e completo, anche quando si lavora solo su parti della composizione.
+ \item \textbf{Assemblaggio Gerarchico}: Utilizza Csound non solo per la sintesi ma anche come uno strumento di montaggio audio per assemblare i componenti finali.
 \end{itemize}

@@ -1,53 +1,46 @@
 % --- Contenuto LaTeX autogenerato da capitolo5.md (sezione 6) ---
 
-\section{Scolpire il Tempo: Modelli Temporali e Micro-ritmica}
-Se i parametri definiscono il \textit{cosa} di un evento sonoro, il controllo temporale ne definisce il \textit{quando}. In un sistema generativo, questa dimensione assume un'importanza cruciale, poiché la distribuzione degli eventi nel tempo è uno dei principali veicoli dell'espressione musicale. Gamma affronta questa sfida con un approccio a due livelli: una macro-gestualità definita da modelli temporali astratti e una micro-ritmica che introduce variazioni organiche e \textit{umanizza} la griglia computazionale.
-\subsection{La Macro-gestualità: \texttt{TimeScheduler} e i Modelli Temporali}
-Il posizionamento degli eventi (o meglio, dei cluster di eventi) all'interno di un layer non è lasciato al caso. La classe \texttt{TimeScheduler} incapsula la logica per la distribuzione temporale, offrendo un toolkit di modelli che corrispondono a gesti musicali archetipici. La scelta di isolare questa funzionalità in una classe dedicata sottolinea come il tempo musicale non sia un semplice parametro, ma una dimensione fondamentale che richiede un trattamento specializzato.
+\section{SCOLPIRE IL TEMPO: MODELLI TEMPORALI E MICRO-RITMICA}
+La classe \texttt{TimeScheduler} incapsula la logica per la distribuzione temporale, offrendo un toolkit di modelli che corrispondono a gesti musicali archetipici. La scelta di isolare questa funzionalità in una classe dedicata sottolinea come il tempo musicale non sia un semplice parametro, ma una dimensione fondamentale che richiede un trattamento specializzato.
 
 Il metodo \texttt{generate\_onsets} è il cuore di questa classe. La sua architettura è elegante e flessibile: parte sempre da una progressione lineare di base, che viene poi \textit{deformata} o \textit{rimappata} secondo il modello scelto nel file YAML.
 
 \begin{lstlisting}[language=Python]
 def generate_onsets(self, model, duration, num_events):
-\section{... (gestione casi base) ...}
     base_progress = np.linspace(0, 1, num_events, endpoint=False)
     final_progress = np.zeros_like(base_progress)
     model_type = model.get('type', 'linear')
-\section{... applicazione del modello ...}
     return final_progress * duration
 \end{lstlisting}
 
 Questa architettura a due fasi (generazione di una progressione normalizzata e successiva trasformazione) permette di definire gesti temporali indipendentemente dalla durata effettiva, rendendoli riutilizzabili e scalabili.
 \subsubsection{I Modelli Archetipici}
-\begin{enumerate}
-    \item Lineare (\texttt{type: linear}): Il modello di default, che distribuisce gli eventi in modo equidistante. Sebbene semplice, è fondamentale per creare pulsazioni regolari, ostinati o griglie ritmiche stabili su cui altri layer possono costruire complessità.
-    \item Ritardando (\texttt{type: ritardando}): Simula un rallentamento progressivo.
-\end{enumerate}
+\textbf{Lineare (\texttt{type: linear})}
+
+Il modello di default, che distribuisce gli eventi in modo equidistante. Sebbene semplice, è fondamentale per creare pulsazioni regolari, ostinati o griglie ritmiche stabili su cui altri layer possono costruire complessità.
+
+\textbf{Ritardando (\texttt{type: ritardando})} 
 \begin{lstlisting}[language=Python]
 elif model_type == 'ritardando':
     shape = model.get('shape', 2.0)
     final_progress = base_progress ** shape
 \end{lstlisting}
-    Applicando una funzione di potenza con esponente maggiore di 1, la curva di progressione si \textit{piega}, concentrando gli eventi all'inizio e diradandoli verso la fine. Il parametro \texttt{shape} controlla l'intensità del gesto: un valore più alto crea un ritardando più drammatico e pronunciato.
+Applicando una funzione di potenza con esponente maggiore di 1, la curva di progressione si \textit{piega}, concentrando gli eventi all'inizio e diradandoli verso la fine. Il parametro \texttt{shape} controlla l'intensità del gesto: un valore più alto crea un ritardando pronunciato.
 
-\begin{enumerate}
-    \item Accelerando (\texttt{type: accelerando}): Speculare al ritardando, crea un aumento di tensione.
-\end{enumerate}
+\textbf{Accelerando (\texttt{type: accelerando})}
 \begin{lstlisting}[language=Python]
 elif model_type == 'accelerando':
     shape = model.get('shape', 2.0)
     final_progress = 1 - (1 - base_progress) ** shape
 \end{lstlisting}
-    La formula inverte la progressione, applica la potenza e la inverte nuovamente. Il risultato è una curva che parte lentamente e accelera in modo esponenziale, ideale per creare archi di tensione, approcci a un climax o gesti di \textit{accumulazione} energetica.
+La formula inverte la progressione, applica la potenza e la inverte nuovamente.
+\textbf{Stocastico (\texttt{type: stochastic})}
 
-\begin{enumerate}
-    \item Stocastico (\texttt{type: stochastic}): Per texture organiche e imprevedibili.
-\end{enumerate}
 \begin{lstlisting}[language=Python]
 elif model_type == 'stochastic':
     final_progress = np.sort(np.random.rand(num_events))
 \end{lstlisting}
-    Il metodo genera un set di istanti casuali e poi li ordina. Questo garantisce che, pur essendo irregolari, gli eventi mantengano una progressione temporale in avanti. È un modello efficace per rompere la rigidità della griglia metrica e imitare processi naturali o \textit{pointillistici}.
+Il metodo genera un set di istanti casuali e poi li ordina. Questo garantisce che, pur essendo irregolari, gli eventi mantengano una progressione temporale in avanti. È un modello efficace per rompere la rigidità della griglia metrica.
 \subsubsection{Il Modello \texttt{breakpoint}: Curve Temporali su Misura}
 Il modello più potente e flessibile è \texttt{breakpoint}. Permette al compositore di \textit{disegnare} una curva di distribuzione temporale definendo una serie di punti di controllo. Ogni segmento tra due punti può avere la propria curvatura, consentendo la creazione di profili complessi.
 
@@ -56,22 +49,16 @@ Consideriamo un esempio:
 timing_model:
   type: breakpoint
   points:
-\begin{itemize}
-    \item [0.0, 0.0]        # Inizio
-    \item [0.3, 0.7, 0.5]   # Il 70% degli eventi avviene nel primo 30% del tempo (curva concava, ease-out)
-    \item [1.0, 1.0, 3.0]   # Il restante 30% degli eventi si distribuisce nel 70% del tempo rimanente (curva convessa, ease-in)
-\end{itemize}
+    - [0.0, 0.0]        # Inizio
+    - [0.3, 0.7, 0.5]   # Il 70% degli eventi avviene nel primo 30% del tempo (curva concava, ease-out)
+    - [1.0, 1.0, 3.0]   # Il restante 30% degli eventi si distribuisce nel 70% del tempo rimanente (curva convessa, ease-in)
 \end{lstlisting}
 Questo YAML descrive un gesto di \textit{esplosione e diradamento}: un'alta densità di eventi all'inizio, seguita da una lunga coda rarefatta.
 
 L'implementazione gestisce questa complessità in modo modulare:
 \begin{lstlisting}[language=Python]
-\section{... (all'interno del loop sui segmenti) ...}
-\section{1. Normalizza il tempo all'interno del segmento (da 0 a 1)}
 time_in_segment = (segment_times - t_start) / (t_end - t_start)
-\section{2. Applica la funzione di shaping (curva)}
 shaped_time = time_in_segment ** shape
-\section{3. Interpola linearmente tra i VALORI usando il tempo curvato}
 interpolated_values = v_start + (v_end - v_start) * shaped_time
 final_progress[segment_mask] = interpolated_values
 \end{lstlisting}

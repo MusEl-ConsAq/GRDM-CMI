@@ -4,7 +4,7 @@
 Il sistema Gamma implementa una separazione netta tra logica di sintesi e configurazione dei parametri, permettendo al compositore di modificare profondamente il comportamento del sistema senza toccare il codice Csound. Questo approccio modulare facilita la sperimentazione e l'estensione del sistema.
 \subsection{Il File tables.yaml}
 Il file \texttt{tables.yaml} rappresenta il cuore configurabile del sistema, definendo tutte le tabelle di forma d'onda e inviluppo utilizzate nella sintesi. La sua struttura gerarchica separa chiaramente gli inviluppi per eventi singoli da quelli per sezioni intere.
-\subsubsection{Struttura delle Definizioni di Tabella}
+
 Ogni tabella è definita attraverso quattro parametri fondamentali:
 
 \begin{lstlisting}[language=Python]
@@ -31,8 +31,6 @@ Questa definizione genera in Csound:
 f 2 0 4096 6 0.001 2048 0.5 2048 1
 \end{lstlisting}
 
-La scelta della GEN routine 6 (segmenti cubici) invece della più comune GEN 7 (segmenti lineari) permette transizioni più morbide tra i punti di controllo, essenziale per inviluppi naturali.
-\subsubsection{Inviluppi Evento vs Inviluppi Sezione}
 Il sistema distingue due categorie di inviluppi con funzioni distinte:
 
 \texttt{Event Envelopes} Applicati ai singoli eventi sonori:
@@ -87,7 +85,7 @@ if i_ifn_section_env > 20 && i_section_duration > 0 then
 endif
 \end{lstlisting}
 \subsection{Sistema di Macro e Costanti Globali}
-Il template CSD di Gamma definisce un sistema di macro che parametrizza l'intero spazio sonoro:
+Il template CSD di Gamma definisce un sistema di macro che parametrizza l'intero spazio frequenziale:
 
 \begin{lstlisting}[language=C]
 #define FONDAMENTALE #32#
@@ -95,13 +93,13 @@ Il template CSD di Gamma definisce un sistema di macro che parametrizza l'intero
 #define INTERVALLI #200#
 #define REGISTRI #50#
 \end{lstlisting}
-\subsubsection{Parametri dello Spazio Frequenziale}
+
 Le macro \texttt{OTTAVE}, \texttt{INTERVALLI} e \texttt{REGISTRI} definiscono la risoluzione del sistema di intonazione:
 
 \begin{itemize}
-    \item \texttt{OTTAVE} (10): Copre l'intero range udibile da 32 Hz a \textasciitilde{}32 kHz
-    \item \texttt{INTERVALLI} (200): Numero di divisioni per ottava nel sistema pitagorico
-    \item \texttt{REGISTRI} (50): Suddivisioni macro all'interno di ogni ottava
+ \item \texttt{OTTAVE} (10): Copre l'intero range udibile da 32 Hz a \textasciitilde{}32 kHz
+ \item \texttt{INTERVALLI} (200): Numero di divisioni per ottava nel sistema pitagorico
+ \item \texttt{REGISTRI} (50): Suddivisioni macro all'interno di ogni ottava
 \end{itemize}
 
 La relazione tra questi parametri determina la granularità frequenziale:
@@ -109,7 +107,7 @@ La relazione tra questi parametri determina la granularità frequenziale:
 Totale frequenze = OTTAVE * INTERVALLI = 2000
 Risoluzione per registro = INTERVALLI / REGISTRI = 4 intervalli
 \end{lstlisting}
-\subsubsection{Integrazione con Python}
+
 Il file \texttt{tables.yaml} viene letto dal generatore Python che:
 \begin{enumerate}
     \item Carica le configurazioni all'inizializzazione

@@ -6,8 +6,6 @@ Il sistema Gamma implementa una separazione netta tra logica di sintesi e config
 
 Il file `tables.yaml` rappresenta il cuore configurabile del sistema, definendo tutte le tabelle di forma d'onda e inviluppo utilizzate nella sintesi. La sua struttura gerarchica separa chiaramente gli inviluppi per eventi singoli da quelli per sezioni intere.
 
-### Struttura delle Definizioni di Tabella
-
 Ogni tabella è definita attraverso quattro parametri fondamentali:
 
 ```yaml
@@ -33,10 +31,6 @@ Questa definizione genera in Csound:
 ```csound
 f 2 0 4096 6 0.001 2048 0.5 2048 1
 ```
-
-La scelta della GEN routine 6 (segmenti cubici) invece della più comune GEN 7 (segmenti lineari) permette transizioni più morbide tra i punti di controllo, essenziale per inviluppi naturali.
-
-### Inviluppi Evento vs Inviluppi Sezione
 
 Il sistema distingue due categorie di inviluppi con funzioni distinte:
 
@@ -94,7 +88,7 @@ endif
 
 ## Sistema di Macro e Costanti Globali
 
-Il template CSD di Gamma definisce un sistema di macro che parametrizza l'intero spazio sonoro:
+Il template CSD di Gamma definisce un sistema di macro che parametrizza l'intero spazio frequenziale:
 
 ```csound
 #define FONDAMENTALE #32#
@@ -102,8 +96,6 @@ Il template CSD di Gamma definisce un sistema di macro che parametrizza l'intero
 #define INTERVALLI #200#
 #define REGISTRI #50#
 ```
-
-### Parametri dello Spazio Frequenziale
 
 Le macro `OTTAVE`, `INTERVALLI` e `REGISTRI` definiscono la risoluzione del sistema di intonazione:
 
@@ -116,8 +108,6 @@ La relazione tra questi parametri determina la granularità frequenziale:
 Totale frequenze = OTTAVE * INTERVALLI = 2000
 Risoluzione per registro = INTERVALLI / REGISTRI = 4 intervalli
 ```
-
-### Integrazione con Python
 
 Il file `tables.yaml` viene letto dal generatore Python che:
 1. Carica le configurazioni all'inizializzazione
