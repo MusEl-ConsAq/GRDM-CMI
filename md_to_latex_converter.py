@@ -655,7 +655,7 @@ def convert_inline_code(text: str) -> str:
             if unicode_char in code:
                 # Se c'è un carattere Unicode, chiudi \texttt{}, inserisci math, riapri \texttt{}
                 # Usa concatenazione invece di f-string per evitare problemi con le graffe
-                replacement = "}}}" + latex_replacement + "\\texttt{{"
+                replacement = "\\texttt{{"+latex_replacement
                 code = code.replace(unicode_char, replacement)
         
         # Poi gestisci i caratteri ASCII speciali

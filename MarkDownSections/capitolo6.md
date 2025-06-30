@@ -11,7 +11,7 @@ La struttura compositiva in Gamma segue una gerarchia rigorosa che rispecchia l'
 Al livello più alto, una composizione è una lista di sezioni:
 
 ```yaml
-- nome_sezione: "Introduzione"
+  nome_sezione: "Introduzione"
   durata: 30
   layers:
     - nome_layer: "Texture di base"
@@ -19,7 +19,7 @@ Al livello più alto, una composizione è una lista di sezioni:
     - nome_layer: "Eventi puntuali"
       # parametri del layer
 
-- nome_sezione: "Sviluppo"
+  nome_sezione: "Sviluppo"
   durata: 60
   layers:
     # altri layers
