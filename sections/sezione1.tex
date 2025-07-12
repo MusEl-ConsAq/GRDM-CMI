@@ -2,7 +2,7 @@
 
 \section{L'ORCHESTRA GAMMA}
 L'orchestra Csound di Gamma non è un sistema autonomo, ma il motore di sintesi e di esecuzione progettato specificamente per interpretare le strutture musicali complesse generate dallo script Python \texttt{generative\_composer.py}. Ogni strumento e opcode è stato creato per tradurre in suono un parametro o un comportamento definito nel file YAML di input. Lo strumento Voce funge da \textit{ponte} principale, ricevendo un intero \textit{comportamento} (un cluster di eventi) da Python e orchestrandone la micro-temporalità e la sintesi. In questo capitolo, analizzeremo come questa traduzione avviene, partendo dal livello macroscopico (Voce) fino al dettaglio del singolo evento (eventoSonoro).
-\subsection{Lo Strumento Voce: Generatore di Comportamenti}
+\subsection{Lo Strumento Voce}
 Lo strumento \texttt{Voce} costituisce il livello più alto della gerarchia di sintesi in Gamma. Non genera direttamente suoni, ma orchestra la creazione di sequenze di eventi sonori secondo logiche compositive complesse. La sua definizione inizia con una ricca parametrizzazione:
 
 \begin{lstlisting}[language=C]
@@ -42,7 +42,7 @@ Ogni parametro ha un significato musicale preciso:
  \item \texttt{i\_ottava\_arrivo} e \texttt{i\_registro\_arrivo}: destinazione per eventuali glissandi
  \item \texttt{i\_NonlinearMode}: seleziona l'algoritmo di generazione per nuovi ritmi
 \end{itemize}
-\subsubsection{Gestione Adattiva della Durata e dei Confini di Sezione}
+\subsubsection{Gestione della Durata e dei Confini di Sezione}
 Un aspetto cruciale per la coerenza musicale è la gestione degli eventi che superano i confini della loro sezione. Il parametro iSafetyBuffer attiva una logica di controllo fondamentale:
 
 \begin{lstlisting}[language=C]
@@ -117,7 +117,7 @@ schedule "eventoSonoro", i_EventAttack - p2, i_EventDuration, i_DynamicIndex, i_
 \end{lstlisting}
 
 Il parametro \texttt{i\_RitmoCorrente} viene passato come \texttt{p7} allo strumento eventoSonoro, dove viene letto come \texttt{iHR} che spiegherò in seguito.
-\subsection{EventoSonoro: Dal Parametro al Suono}
+\subsection{Lo strumento EventoSonoro}
 Lo strumento \texttt{eventoSonoro} è responsabile della generazione effettiva del suono. Riceve i parametri calcolati da Voce e li trasforma in segnale audio attraverso sintesi e processamento.
 \subsubsection{Sistema di Compensazione Isofonica dell'Ampiezza}
 Una delle caratteristiche più sofisticate di Gamma è l'implementazione di un sistema di calibrazione dell'ampiezza basato sulle curve isofoniche dello standard ISO 226:2003\cite{ISO2262003}. Per comprendere l'importanza di questa implementazione, è necessario esaminare il fenomeno psicoacustico che la motiva.
@@ -438,7 +438,6 @@ Questa architettura crea una profonda interconnessione tra dimensione temporale,
 L'uso dell'intonazione pitagorica invece del temperamento equabile aggiunge ulteriore ricchezza armonica: le quinte sono pure (rapporto 3:2), ma questo genera comma pitagorici e intervalli microtonali che colorano il risultato con battimenti multipli di difficile prevedibilità.
 \subsection{NonlinearFunc: Il Generatore di Ritmi Caotici}
 L'opcode \texttt{NonlinearFunc} rappresenta un sistema per la generazione di sequenze ritmiche che evolvono nel tempo secondo principi deterministici, periodici o caotici. Questo UDO (User Defined Opcode) estende le possibilità compositive oltre i pattern ritmici predefiniti, permettendo l'esplorazione di territori ritmici emergenti.
-\subsubsection{Struttura e Parametri dell'Opcode}
 \begin{lstlisting}[language=C]
 opcode NonlinearFunc, i, ippo
   iX, iMode, iMinVal, iMaxVal xin

@@ -1,6 +1,121 @@
 % --- Contenuto LaTeX autogenerato da capitolo3.md (sezione 4) ---
 
 \section{INTRODUZIONE E ARCHITETTURA GENERALE}
+
+Prima di analizzare nel dettaglio i singoli componenti dell'architettura di Gamma, è fondamentale comprendere la filosofia progettuale e il flusso di elaborazione che governa l'intero sistema. Gamma è concepito come una \textbf{pipeline di trasformazioni successive}, dove ogni livello di astrazione traduce rappresentazioni sempre più concrete fino al risultato sonoro finale.
+
+\subsection{Visione d'insieme del sistema}
+
+Il sistema Gamma implementa una \textbf{separazione netta tra tre domini fondamentali}: la concezione compositiva, l'elaborazione algoritmica e la sintesi sonora. Questa separazione non è meramente tecnica, ma riflette una precisa filosofia compositiva che distingue tra \emph{intenzione}, \emph{interpretazione} e \emph{realizzazione}.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    block/.style={rectangle, draw, fill=blue!20, text width=3cm, text centered, rounded corners, minimum height=1cm},
+    wideblock/.style={rectangle, draw, fill=green!20, text width=8cm, text centered, rounded corners, minimum height=0.8cm},
+    levelblock/.style={rectangle, draw, fill=gray!10, text width=10cm, text centered, rounded corners, minimum height=1.2cm, font=\bfseries},
+    arrow/.style={thick,->,>=stealth}
+]
+
+% Livello Compositivo
+\node[levelblock] (comp) at (0,8) {LIVELLO COMPOSITIVO};
+\node[block] (yaml) at (-2,6.5) {File YAML\\Maschere di tendenza};
+\node[block] (tables) at (2,6.5) {tables.yaml\\Configurazione};
+\node[block] (compositore) at (0,5.5) {Compositore};
+
+% Livello Algoritmico  
+\node[levelblock] (algo) at (0,4) {LIVELLO ALGORITMICO};
+\node[wideblock] (gencomp) at (0,3) {GenerativeComposer.py};
+\node[block] (scheduler) at (-3,1.5) {TimeScheduler\\Distribuzione\\temporale};
+\node[block] (maschere) at (0,1.5) {Maschere\\parametriche};
+\node[block] (interp) at (3,1.5) {Interpolazione\\dinamica};
+\node[block] (eventi) at (0,0.5) {Eventi parametrizzati};
+\node[block] (csd) at (0,-0.5) {Generazione file .csd};
+
+% Livello di Sintesi
+\node[levelblock] (sintesi) at (0,-2) {LIVELLO DI SINTESI};
+\node[wideblock] (csound) at (0,-3) {Orchestra Csound};
+\node[block] (voce) at (-3,-4.5) {Voce\\Generatore\\di eventi};
+\node[block] (evento) at (0,-4.5) {EventoSonoro\\Sintesi +\\Spazializzazione};
+\node[block] (nonlinear) at (3,-4.5) {NonlinearFunc\\Ritmi caotici};
+\node[block] (pitag) at (-1.5,-6) {Sistema intonazione\\pitagorica};
+\node[block] (iso) at (1.5,-6) {Compensazione\\isofonica};
+
+% Livello di Output
+\node[levelblock] (output) at (0,-7.5) {LIVELLO DI OUTPUT};
+\node[block] (rendering) at (-2,-9) {Rendering\\parallelo};
+\node[block] (assemb) at (2,-9) {Assemblaggio\\gerarchico};
+\node[block] (layerwav) at (-2,-10.5) {File .wav\\dei layer};
+\node[block] (finalwav) at (2,-10.5) {Composizione\\finale.wav};
+\node[block] (debug) at (0,-11.5) {CompositionDebugger};
+\node[block] (pdf) at (0,-12.5) {Visualizzazione.pdf};
+
+% Frecce
+\draw[arrow] (compositore) -- (yaml);
+\draw[arrow] (compositore) -- (tables);
+\draw[arrow] (yaml) -- (gencomp);
+\draw[arrow] (tables) -- (gencomp);
+\draw[arrow] (gencomp) -- (scheduler);
+\draw[arrow] (gencomp) -- (maschere);
+\draw[arrow] (gencomp) -- (interp);
+\draw[arrow] (scheduler) -- (eventi);
+\draw[arrow] (maschere) -- (eventi);
+\draw[arrow] (interp) -- (eventi);
+\draw[arrow] (eventi) -- (csd);
+\draw[arrow] (csd) -- (csound);
+\draw[arrow] (csound) -- (voce);
+\draw[arrow] (csound) -- (evento);
+\draw[arrow] (csound) -- (nonlinear);
+\draw[arrow] (voce) -- (pitag);
+\draw[arrow] (evento) -- (pitag);
+\draw[arrow] (nonlinear) -- (iso);
+\draw[arrow] (pitag) -- (rendering);
+\draw[arrow] (iso) -- (assemb);
+\draw[arrow] (rendering) -- (layerwav);
+\draw[arrow] (assemb) -- (finalwav);
+\draw[arrow] (layerwav) -- (debug);
+\draw[arrow] (finalwav) -- (debug);
+\draw[arrow] (debug) -- (pdf);
+
+\end{tikzpicture}
+\caption{Architettura completa del sistema Gamma: flusso di elaborazione dai concetti compositivi al risultato sonoro finale}
+\label{fig:gamma_architecture}
+\end{figure}
+
+\subsection{Flusso di elaborazione top-down}
+
+Il processo compositivo in Gamma segue un \textbf{approccio a cascata guidato dalle maschere di tendenza}, dove ogni fase raffina e concretizza le informazioni del livello superiore:
+
+\subsubsection{Fase 1: Definizione delle Intenzioni Compositive}
+Il compositore opera al livello più astratto, definendo \textbf{spazi di possibilità} piuttosto che valori deterministici. Una maschera come \texttt{ottava: \{ range: [3, 6] \}} non specifica un'altezza precisa, ma delimita una regione tonale che il sistema esplorerà stocasticamente. Questa filosofia si estende a tutti i parametri: dinamiche, durate, densità, comportamenti ritmici.
+
+\subsubsection{Fase 2: Interpretazione e Generazione Parametrica}
+Il \texttt{GenerativeComposer} funge da \textbf{interprete delle intenzioni compositive}, traducendo le maschere astratte in parametri numerici concreti per ogni singolo evento sonoro. Questo processo non è meccanico: il sistema implementa strategie di generazione differenziate (distribuzioni gaussiane, scelte pesate, interpolazioni) e gestisce l'evoluzione temporale attraverso l'interpolazione tra stati iniziali e finali.
+
+Il \texttt{TimeScheduler} opera in parallelo, traducendo modelli temporali astratti (\texttt{ritardando}, \texttt{accelerando}, \texttt{breakpoint}) in sequenze precise di onset temporali. Questa separazione tra generazione parametrica e distribuzione temporale permette di orchestrare indipendentemente il \emph{cosa} suona e il \emph{quando} suona.
+
+\subsubsection{Fase 3: Traduzione in Linguaggio Csound}
+La generazione degli score \texttt{.csd} rappresenta il \textbf{ponte tra l'astrazione algoritmica e la concretezza della sintesi}. Ogni evento generato viene tradotto in una chiamata allo strumento \texttt{Voce}, che riceve non solo i parametri musicali ma anche metadati strutturali necessari per la gestione dei confini temporali e la coerenza dell'assemblaggio finale.
+
+\subsubsection{Fase 4: Sintesi e Spazializzazione}
+L'orchestra Csound implementa una \textbf{gerarchia di responsabilità}: lo strumento \texttt{Voce} gestisce la macro-temporalità e la generazione di sequenze di eventi, delegando a \texttt{EventoSonoro} la sintesi del singolo suono e la sua spazializzazione. Il sistema di intonazione pitagorica e la compensazione isofonica operano trasversalmente, garantendo coerenza armonica e percettiva.
+
+\subsubsection{Fase 5: Assemblaggio e Finalizzazione}
+Il rendering finale adotta una \textbf{strategia gerarchica}: prima i layer vengono renderizzati individualmente, poi assemblati a livello di sezione, infine combinati nella composizione completa. Questa architettura permette rendering incrementali e ottimizzazioni per il flusso di lavoro compositivo iterativo.
+
+\subsection{Principi architetturali fondamentali}
+
+L'architettura di Gamma si fonda su tre principi progettuali che ne determinano sia le capacità espressive che le caratteristiche tecniche:
+
+\textbf{Disaccoppiamento modulare}: Ogni componente ha responsabilità ben definite e comunica attraverso interfacce standardizzate. Il \texttt{TimeScheduler} non conosce i contenuti musicali, il generatore parametrico non gestisce la sintesi, l'orchestra Csound non influenza la logica compositiva.
+
+\textbf{Configurabilità esterna}: La separazione tra codice e dati musicali permette modifiche profonde del comportamento senza interventi sul software. Il file \texttt{tables.yaml} estende questo principio anche agli aspetti più tecnici come gli inviluppi e le forme d'onda.
+
+\textbf{Scalabilità computazionale}: L'approccio a rendering parallelo e assemblaggio gerarchico rende il sistema adatto a composizioni di dimensioni arbitrarie, mantenendo tempi di elaborazione gestibili anche per progetti complessi.
+
+Questi principi non sono solo scelte tecniche, ma riflettono una \textbf{visione compositiva} che privilegia l'esplorazione controllata dello spazio sonoro rispetto alla determinazione esatta di ogni dettaglio, permettendo al compositore di lavorare con il sistema come con uno strumento espressivo piuttosto che come con un semplice esecutore di istruzioni.
+
+
 Il \texttt{generative\_composerYaml2.py} è un sistema di composizione algoritmica che traduce una descrizione astratta di una struttura musicale, definita in formato YAML, in un file audio (WAV). Lo fa generando uno score per il software di sintesi sonora Csound.
 
 L'architettura del programma è basata su tre componenti principali e un'esecuzione a fasi:

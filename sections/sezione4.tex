@@ -1,6 +1,6 @@
 % --- Contenuto LaTeX autogenerato da capitolo4.md (sezione 5) ---
 
-\section{DALL'INTENZIONE ALLA NOTA: MASCHERE DI TENDENZA E GENERAZIONE PARAMETRICA}
+\section{MASCHERE DI TENDENZA E GENERAZIONE PARAMETRICA}
 La generazione parametrica è il motore alchemico di Gamma, il processo centrale attraverso cui le intenzioni del compositore, espresse come  maschere di tendenza  nel file YAML, vengono trasformate in valori numerici concreti per ogni singolo evento sonoro. Analizzeremo come il sistema traduce l'astrazione in suono, con particolare attenzione alle tecniche di generazione, interpolazione e gestione della coerenza strutturale.
 \subsection{Il Motore Generativo: \texttt{\_generate\_params\_from\_mask()}}
 Il metodo \texttt{\_generate\_params\_from\_mask()} è il punto di convergenza tra l'astrazione compositiva e la concretezza numerica. Implementa la logica che trasforma una singola maschera di tendenza nei parametri specifici per un evento sonoro, gestendo una varietà di strategie generative per rispondere a diverse necessità espressive.
@@ -65,7 +65,6 @@ elif 'choices' in rhythm_mask:
 Questa architettura permette al compositore di scegliere il livello di dettaglio più consono: specificare un pattern esatto, scegliere da una libreria di pattern, o semplicemente indicare una \textit{qualità} ritmica desiderata.
 \subsection{L'Evoluzione nel Tempo: Interpolazione delle Maschere}
 Se la generazione da una singola maschera crea eventi statici, l'interpolazione tra due maschere (\texttt{stato\_iniziale} e \texttt{stato\_finale}) dà vita a processi dinamici e trasformativi. Il metodo \texttt{\_interpolate\_mask()} implementa questa logica.
-\subsubsection{Gestione delle Transizioni Asimmetriche}
 Un problema chiave nell'interpolazione è come gestire parametri che compaiono solo nello stato finale. Gamma adotta una strategia di \textit{riempimento} che ne aumenta la flessibilità.
 
 \begin{lstlisting}[language=Python]
